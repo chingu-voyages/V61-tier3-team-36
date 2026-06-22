@@ -61,6 +61,7 @@ The app can be built with these main pages:
 | Implementation Plan | Plan one selected task before coding |
 | Test Plan | Define automated/manual validation steps |
 | PR Pack | Generate editable PR title, description, checklist, release notes, and rollback plan |
+| Review Checklist / Activity | Show final review checks, next action, and audit trail |
 
 ## User Journey
 
@@ -272,6 +273,7 @@ Minimum API routes:
 | `POST /api/tasks/:id/implementation-plan` | Save implementation plan |
 | `POST /api/tasks/:id/test-plan` | Save test plan |
 | `POST /api/tasks/:id/pr-pack` | Save PR pack |
+| `GET /api/tasks/:id/audit-logs` | Fetch activity for a task/workflow item |
 
 ## Frontend Component Structure
 
@@ -469,6 +471,156 @@ PR Description:
 - Remove PR pack route and related database records if needed.
 ```
 
+## Section-Level Build Tasks
+
+The app should be built section by section. These are the practical tasks shown in the animated showcase and should guide the team's work breakdown.
+
+### Project
+
+- Build project dashboard.
+- Add create/edit project form.
+- Show project health summary.
+
+Project fields:
+
+- name
+- description
+- repo URL
+- status
+- active requirement count
+- task count
+- delivery risk
+- PR readiness
+
+### Repo Intelligence
+
+- Build repo intelligence form.
+- Store architecture notes.
+- Show repo readiness state.
+
+Repo fields:
+
+- frontend framework
+- backend framework
+- database
+- package manager
+- build command
+- test command
+- important folders
+- architecture notes
+
+### Requirements
+
+- Build requirement editor.
+- Add acceptance criteria list.
+- Track requirement status.
+
+Requirement fields:
+
+- title
+- description
+- user story
+- business objective
+- acceptance criteria
+- assumptions
+- open questions
+- status
+
+### Impact Analysis
+
+- Build impact analysis form.
+- Add risk-level controls.
+- Capture security and test scope.
+
+Impact fields:
+
+- frontend impact
+- backend impact
+- API impact
+- database impact
+- dependency impact
+- security impact
+- risk level
+- test scope
+
+### Task Planner
+
+- Build task creation form.
+- Group tasks by requirement.
+- Add task status workflow.
+
+Task fields:
+
+- title
+- description
+- task type
+- owner
+- priority
+- risk level
+- status
+
+### Implementation Plan
+
+- Build implementation plan editor.
+- Add validation and rollback fields.
+- Link plan to selected task.
+
+Implementation plan fields:
+
+- summary
+- steps
+- affected files
+- design choices
+- risks
+- validation steps
+- rollback notes
+
+### Test Plan
+
+- Build test plan form.
+- Add test evidence field.
+- Gate PR readiness on tests.
+
+Test plan fields:
+
+- unit tests
+- integration tests
+- manual QA checks
+- regression checks
+- commands run
+- test evidence
+
+### PR Pack
+
+- Build PR pack template generator.
+- Add editable preview screen.
+- Add copy and export actions.
+
+PR pack fields:
+
+- branch name
+- commit message
+- PR title
+- PR description
+- checklist
+- test evidence
+- release notes
+- rollback plan
+
+### Review Checklist / Activity
+
+- Build review checklist display.
+- Add audit log events.
+- Show next action state.
+
+Review/activity fields:
+
+- reviewer focus
+- latest activity
+- blocked items
+- next action
+- audit log events
+
 ## Template-Based Generation
 
 Because the team has limited time and wants minimal AI-generated code, PR pack generation should start with deterministic templates.
@@ -587,6 +739,7 @@ The MVP is done when a user can complete this full path:
 8. Add test plan.
 9. Generate or edit PR pack.
 10. Copy/export the PR pack for use in GitHub/GitLab.
+11. Review checklist and activity show that the item is ready for peer review.
 
 ## Recommended Team Split
 
@@ -600,4 +753,3 @@ For 4 people:
 | Developer 4 | Test plan, PR pack, export/copy, QA/docs |
 
 Rotate review responsibilities so every major change has another person checking it.
-
