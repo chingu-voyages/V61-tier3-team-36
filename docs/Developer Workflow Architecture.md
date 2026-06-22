@@ -6,7 +6,28 @@ The main idea is simple:
 
 > Do not jump from requirement directly to code. First understand the requirement, check impact, break work into tasks, plan implementation, prepare code/test changes, and then create a review-ready PR package.
 
-## High-Level Flow
+## MVP App Flow
+
+This is the workflow the app should implement for the 2-month MVP:
+
+```mermaid
+flowchart LR
+    A[Project] --> B[Repo Intelligence]
+    B --> C[Requirement]
+    C --> D[Impact Analysis]
+    D --> E[Task Planner]
+    E --> F[Implementation Plan]
+    F --> G[Test Plan]
+    G --> H[PR Pack]
+    H --> I[Review Checklist / Activity]
+    I --> J[Copy / Export PR Output]
+```
+
+The MVP app should stop at review-ready artifacts. It should not automatically write code, commit changes, open pull requests, merge code, or deploy software.
+
+## Full Engineering Flow Context
+
+This is the larger engineering workflow the app supports. Some stages happen inside the app, and some happen outside the app in the developer's IDE, GitHub/GitLab, CI, and deployment tools.
 
 ```mermaid
 flowchart LR
@@ -18,7 +39,8 @@ flowchart LR
     F --> G[Code / Patch Work]
     G --> H[Test Planning]
     H --> I[PR Pack]
-    I --> J[Review]
+    I --> JA[Review Checklist / Activity]
+    JA --> J[Review]
     J --> K[Merge / Delivery]
     K --> L[Learnings / Metrics]
 
@@ -209,6 +231,8 @@ Validation:
 
 Purpose: Make the actual code changes in a controlled way.
 
+MVP boundary: code work happens outside the app in the developer's editor. The app stores the requirement, impact analysis, task, implementation plan, test plan, and PR pack that guide this work.
+
 What happens:
 
 - Developer works on the selected task.
@@ -287,9 +311,38 @@ PR checklist:
 - Manual QA completed
 - Rollback plan included
 
-## Stage 10: Review
+## Stage 10: Review Checklist / Activity
+
+Purpose: Show whether the work is ready for peer review.
+
+What happens:
+
+- App shows final review checklist.
+- App shows latest activity/audit log.
+- App shows blocked items, if any.
+- App shows the next action.
+- User copies or exports the PR pack.
+
+Output:
+
+- Review checklist
+- Activity history
+- Next action
+- Copy/export-ready PR output
+
+Example checklist:
+
+- Requirement linked
+- Acceptance criteria covered
+- Impact analysis reviewed
+- Test evidence attached
+- Rollback plan included
+
+## Stage 11: Peer Review
 
 Purpose: Let another person verify the change before merge.
+
+MVP boundary: peer review normally happens in GitHub/GitLab. The app prepares the review package but does not need to create or approve pull requests in the MVP.
 
 What happens:
 
@@ -313,9 +366,11 @@ Review questions:
 - Is the PR description clear?
 - Is rollback possible?
 
-## Stage 11: Merge / Delivery
+## Stage 12: Merge / Delivery
 
 Purpose: Merge approved work and prepare it for release.
+
+MVP boundary: merge and deployment happen outside the app. The app may store release notes and rollback notes, but it should not automate deployment in the MVP.
 
 What happens:
 
@@ -330,9 +385,11 @@ Output:
 - Release notes
 - Follow-up tasks if needed
 
-## Stage 12: Learnings / Metrics
+## Stage 13: Learnings / Metrics
 
 Purpose: Improve team delivery over time.
+
+MVP boundary: full DORA-style metrics are a later enhancement. For the MVP, simple counts and activity history are enough.
 
 What happens:
 
@@ -367,10 +424,12 @@ flowchart TD
     G --> H[Build task]
     H --> I[Test task]
     I --> J[Prepare PR pack]
-    J --> K[Peer review]
-    K --> L{Approved?}
-    L -->|No| G
-    L -->|Yes| M[Merge]
+    J --> K[Review checklist / activity]
+    K --> L[Copy PR output]
+    L --> M[Peer review outside app]
+    M --> N{Approved?}
+    N -->|No| G
+    N -->|Yes| O[Merge outside app]
 ```
 
 ## Roles
@@ -435,4 +494,3 @@ Every task should answer these questions before coding starts:
 5. How will we test it?
 6. What should reviewers check?
 7. How can we roll back if something goes wrong?
-
