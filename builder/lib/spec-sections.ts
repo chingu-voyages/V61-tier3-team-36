@@ -4,7 +4,7 @@ export type SpecSection ={
     description:string;
 };
 
-export const spectSections: readonly SpecSection[] = [
+export const SPEC_SECTIONS: readonly SpecSection[] = [
     
     {
     id: "problem-goal", 
