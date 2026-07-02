@@ -16,7 +16,7 @@ CREATE TABLE conversation (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id       UUID NOT NULL UNIQUE REFERENCES project(id) ON DELETE CASCADE,
   messages         JSONB NOT NULL DEFAULT '[]',
-  interview_state  JSONB NOT NULL DEFAULT '{}'
+  interview_state  JSONB NOT NULL DEFAULT '{"satisfiedSectionIds":[]}'
 );
 
 CREATE TABLE spec (
