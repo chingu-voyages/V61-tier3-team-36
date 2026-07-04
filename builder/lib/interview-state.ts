@@ -1,5 +1,4 @@
 import { SPEC_SECTIONS } from "./spec-sections";
-console.log(SPEC_SECTIONS);
 
 export type InterviewState = {
   satisfiedSectionIds: readonly string[];
