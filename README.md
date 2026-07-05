@@ -1,42 +1,201 @@
-# voyage-tasks
+# SpecForge
 
-Your project's `readme` is as important to success as your code. For 
-this reason you should put as much care into its creation and maintenance
-as you would any other component of the application.
+SpecForge is a Next.js app for turning a product idea into a structured spec/PRD. The current backend foundation supports workspaces, projects, interview state, generated spec versions, and HTTP endpoints for workspace/project management.
 
-If you are unsure of what should go into the `readme` let this article,
-written by an experienced Chingu, be your starting point - 
-[Keys to a well written README](https://tinyurl.com/yk3wubft).
+## Repository Layout
 
-And before we go there's "one more thing"! Once you decide what to include
-in your `readme` feel free to replace the text we've provided here.
+```text
+.
++-- builder/                 # Next.js application
+|   +-- db/schema.sql        # PostgreSQL schema
+|   +-- lib/                 # Repository and domain logic
+|   +-- src/app/             # App Router pages and API routes
++-- docs/                    # Planning docs and team artifacts
++-- plans/                   # Work breakdowns and ticket plans
++-- specs/                   # Product/spec documents
+```
 
-> Own it & Make it your Own!
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- PostgreSQL
+- `postgres` Node client
+- Anthropic SDK for LLM calls
+- Vitest for tests
+- ESLint with Next.js config
+
+## Required Installations
+
+Install these on your machine before running the project:
+
+- Node.js 20 or newer
+- npm, included with Node.js
+- PostgreSQL 14 or newer
+- Git
+
+Optional but useful:
+
+- Docker Desktop, if you prefer running PostgreSQL in a container
+- A database GUI such as TablePlus, pgAdmin, or DBeaver
+
+## Install Project Libraries
+
+All JavaScript libraries are declared in [builder/package.json](./builder/package.json) and locked in [builder/package-lock.json](./builder/package-lock.json).
+
+```bash
+cd builder
+npm install
+```
+
+You do not need to install `next`, `react`, `typescript`, `vitest`, or the other packages manually. `npm install` installs everything used by the app.
+
+## Environment Setup
+
+Create `builder/.env`:
+
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/specforge
+```
+
+`DATABASE_URL` is required by [builder/lib/db.ts](./builder/lib/db.ts). Do not commit real secrets.
+
+The Anthropic SDK is installed because the interview engine uses an LLM client. The current helper accepts an API key when the client is created, so there is no required global Anthropic environment variable yet. If a future route or UI flow reads one from the environment, use a local-only value such as:
+
+```env
+ANTHROPIC_API_KEY=your-api-key
+```
+
+## Database Setup
+
+Create the local database:
+
+```bash
+createdb specforge
+```
+
+Load the schema:
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+```
+
+On Windows PowerShell:
+
+```powershell
+psql $env:DATABASE_URL -f db/schema.sql
+```
+
+If PostgreSQL reports that `gen_random_uuid()` is unavailable, enable the extension once in the database:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+
+Then rerun the schema command.
+
+## Running The App
+
+From the `builder` directory:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+## Available Scripts
+
+Run these from `builder/`:
+
+```bash
+npm run dev      # Start the local Next.js dev server
+npm run build    # Build the production app
+npm run start    # Start the built production app
+npm run lint     # Run ESLint
+npm test         # Run Vitest
+```
+
+Type-check manually with:
+
+```bash
+npx tsc --noEmit
+```
+
+## HTTP API
+
+### Create Workspace
+
+```http
+POST /api/workspaces
+```
+
+Returns:
+
+```json
+{
+  "magicToken": "workspace-token"
+}
+```
+
+### Project Endpoints
+
+All project endpoints require:
+
+```http
+X-Workspace-Token: workspace-token
+```
+
+Endpoints:
+
+```http
+GET /api/projects
+POST /api/projects
+PATCH /api/projects/:projectId
+DELETE /api/projects/:projectId
+```
+
+Create or rename body:
+
+```json
+{
+  "name": "Project Name"
+}
+```
+
+Expected validation behavior:
+
+- Missing workspace token returns `400`
+- Unknown workspace token returns `404`
+- Missing or empty project name returns `400`
+- Project not found for rename/delete returns `404`
+
+## Data Model
+
+The schema defines:
+
+- `workspace`: magic-link workspace identity
+- `project`: projects scoped to a workspace
+- `conversation`: one interview conversation per project
+- `spec`: generated Markdown and structured JSON specs, versioned per project
+
+Generated specs are append-only by version. The first spec for a project is version `1`; regenerating creates version `2`, `3`, and so on.
+
+## Development Notes
+
+- Keep SQL inside repository modules in `builder/lib`.
+- Keep App Router handlers thin: parse requests, validate boundary inputs, authenticate workspace tokens, call repositories, and return JSON.
+- Let unexpected errors propagate through Next.js instead of hiding them behind generic API responses.
+- Add focused Vitest coverage for repository behavior and route boundary behavior.
 
 ## Team Documents
 
-You may find these helpful as you work together to organize your project.
-
 - [Team Project Ideas](./docs/team_project_ideas.md)
 - [Team Decision Log](./docs/team_decision_log.md)
-
-Meeting Agenda templates (located in the `/docs` directory in this repo):
-
-- Meeting - Voyage Kickoff --> ./docs/meeting-voyage_kickoff.docx
-- Meeting - App Vision & Feature Planning --> ./docs/meeting-vision_and_feature_planning.docx
-- Meeting - Sprint Retrospective, Review, and Planning --> ./docs/meeting-sprint_retrospective_review_and_planning.docx
-- Meeting - Sprint Open Topic Session --> ./docs/meeting-sprint_open_topic_session.docx
-
-## Our Team
-
-Everyone on your team should add their name along with a link to their GitHub
-& optionally their LinkedIn profiles below. Do this in Sprint #1 to validate
-your repo access and to practice PR'ing with your team *before* you start
-coding!
-
-- Teammate name #1: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
-- Teammate name #2: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
-- Teammate name #3: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
-
-   ...
-- Teammate name #n: [GitHub](https://github.com/ghaccountname) / [LinkedIn](https://linkedin.com/in/liaccountname)
+- [Idea-to-spec design](./specs/2026-06-12-idea-to-spec-design.md)
+- [Work breakdown](./plans/2026-06-12-idea-to-spec-work-breakdown.md)
