@@ -16,7 +16,7 @@ CREATE TABLE conversation (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id       UUID NOT NULL UNIQUE REFERENCES project(id) ON DELETE CASCADE,
   messages         JSONB NOT NULL DEFAULT '[]',
-  interview_state  JSONB NOT NULL DEFAULT '{}'
+  interview_state  JSONB NOT NULL DEFAULT '{"satisfiedSectionIds":[]}'
 );
 
 CREATE TABLE spec (
@@ -24,6 +24,9 @@ CREATE TABLE spec (
   project_id   UUID NOT NULL REFERENCES project(id) ON DELETE CASCADE,
   markdown     TEXT NOT NULL DEFAULT '',
   schema_json  JSONB NOT NULL DEFAULT '{}',
-  version      INTEGER NOT NULL DEFAULT 1,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+  version      INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, version)
 );
+
+CREATE INDEX spec_project_latest_idx ON spec (project_id, version DESC);
