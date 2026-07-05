@@ -8,14 +8,21 @@ import {
   DELETE as deleteProjectRoute,
   PATCH as renameProjectRoute,
 } from "./projects/[projectId]/route";
+import { POST as chatRoute } from "./chat/route";
 
 const repository = vi.hoisted(() => ({
   createWorkspace: vi.fn(),
   getWorkspaceByMagicToken: vi.fn(),
+  getProjectInWorkspace: vi.fn(),
   createProject: vi.fn(),
   listProjects: vi.fn(),
   renameProject: vi.fn(),
   deleteProject: vi.fn(),
+  getOrCreateConversation: vi.fn(),
+  saveConversationTurn: vi.fn(),
+  createLLMClient: vi.fn((apiKey: string) => ({ apiKey })),
+  runTurn: vi.fn(),
+  InterviewEngine: vi.fn(),
 }));
 
 vi.mock("../../../lib/workspace", () => ({
@@ -24,10 +31,24 @@ vi.mock("../../../lib/workspace", () => ({
 }));
 
 vi.mock("../../../lib/project", () => ({
+  getProjectInWorkspace: repository.getProjectInWorkspace,
   createProject: repository.createProject,
   listProjects: repository.listProjects,
   renameProject: repository.renameProject,
   deleteProject: repository.deleteProject,
+}));
+
+vi.mock("../../../lib/conversation", () => ({
+  getOrCreateConversation: repository.getOrCreateConversation,
+  saveConversationTurn: repository.saveConversationTurn,
+}));
+
+vi.mock("../../../lib/llm-client", () => ({
+  createLLMClient: repository.createLLMClient,
+}));
+
+vi.mock("../../../lib/interview-engine", () => ({
+  InterviewEngine: repository.InterviewEngine,
 }));
 
 const workspace = {
@@ -47,12 +68,13 @@ const project = {
 function request(
   method: string,
   path: string,
-  options: { token?: string; body?: unknown } = {}
+  options: { token?: string; aiKey?: string; body?: unknown } = {}
 ) {
   return new Request(`http://localhost${path}`, {
     method,
     headers: {
       ...(options.token ? { "X-Workspace-Token": options.token } : {}),
+      ...(options.aiKey ? { "X-AI-Model-Key": options.aiKey } : {}),
       ...(options.body ? { "Content-Type": "application/json" } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -81,6 +103,9 @@ describe("workspace routes", () => {
 describe("project routes", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    repository.InterviewEngine.mockImplementation(() => ({
+      runTurn: repository.runTurn,
+    }));
   });
 
   it("returns 400 when the workspace token is missing", async () => {
@@ -230,5 +255,145 @@ describe("project routes", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Project not found",
     });
+  });
+});
+
+describe("chat route", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    repository.InterviewEngine.mockImplementation(() => ({
+      runTurn: repository.runTurn,
+    }));
+  });
+
+  it("returns 401 when the AI model API key header is missing", async () => {
+    const response = await chatRoute(
+      request("POST", "/api/chat", {
+        token: "token-1",
+        body: { projectId: "project-1", message: "I want a planning app." },
+      })
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "AI model API key is required",
+    });
+    expect(repository.getWorkspaceByMagicToken).not.toHaveBeenCalled();
+  });
+
+  it("runs one interview turn, persists the completed result, and returns the next question", async () => {
+    const initialMessages = [
+      { role: "assistant" as const, content: "What are you building?" },
+    ];
+    const updatedState = { satisfiedSectionIds: ["problem"] };
+    const updatedMessages = [
+      ...initialMessages,
+      { role: "user" as const, content: "A planning app." },
+      {
+        role: "assistant" as const,
+        content: [
+          {
+            type: "tool_use" as const,
+            id: "tool-1",
+            name: "update_interview",
+            input: {
+              satisfied_section_ids: ["problem"],
+              next_question: "Who is this for?",
+            },
+          },
+        ],
+      },
+    ];
+
+    repository.getWorkspaceByMagicToken.mockResolvedValue(workspace);
+    repository.getProjectInWorkspace.mockResolvedValue(project);
+    repository.getOrCreateConversation.mockResolvedValue({
+      id: "conversation-1",
+      project_id: "project-1",
+      messages: initialMessages,
+      interview_state: { satisfiedSectionIds: [] },
+    });
+    repository.runTurn.mockResolvedValue({
+      nextQuestion: "Who is this for?",
+      updatedState,
+      updatedMessages,
+    });
+
+    const response = await chatRoute(
+      request("POST", "/api/chat", {
+        token: "token-1",
+        aiKey: "model-key",
+        body: { projectId: "project-1", message: "A planning app." },
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(repository.createLLMClient).toHaveBeenCalledWith("model-key");
+    expect(repository.getProjectInWorkspace).toHaveBeenCalledWith(
+      "workspace-1",
+      "project-1"
+    );
+    expect(repository.runTurn).toHaveBeenCalledWith({
+      state: { satisfiedSectionIds: [] },
+      messages: [
+        ...initialMessages,
+        { role: "user", content: "A planning app." },
+      ],
+    });
+    expect(repository.saveConversationTurn).toHaveBeenCalledWith(
+      "project-1",
+      updatedMessages,
+      updatedState
+    );
+    await expect(response.json()).resolves.toEqual({
+      nextQuestion: "Who is this for?",
+      converged: false,
+    });
+  });
+
+  it("returns 502 and leaves the conversation unsaved when the model turn fails", async () => {
+    repository.getWorkspaceByMagicToken.mockResolvedValue(workspace);
+    repository.getProjectInWorkspace.mockResolvedValue(project);
+    repository.getOrCreateConversation.mockResolvedValue({
+      id: "conversation-1",
+      project_id: "project-1",
+      messages: [],
+      interview_state: { satisfiedSectionIds: [] },
+    });
+    repository.runTurn.mockRejectedValue(new Error("tool call missing"));
+
+    const response = await chatRoute(
+      request("POST", "/api/chat", {
+        token: "token-1",
+        aiKey: "model-key",
+        body: { projectId: "project-1", message: "A planning app." },
+      })
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      error:
+        "Interview turn failed while calling the AI model. Check your API key and try again.",
+    });
+    expect(repository.saveConversationTurn).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 without loading a conversation when the project is outside the workspace", async () => {
+    repository.getWorkspaceByMagicToken.mockResolvedValue(workspace);
+    repository.getProjectInWorkspace.mockResolvedValue(null);
+
+    const response = await chatRoute(
+      request("POST", "/api/chat", {
+        token: "token-1",
+        aiKey: "model-key",
+        body: { projectId: "project-2", message: "A planning app." },
+      })
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "Project not found",
+    });
+    expect(repository.getOrCreateConversation).not.toHaveBeenCalled();
   });
 });
