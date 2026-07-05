@@ -1,6 +1,6 @@
 # SpecForge
 
-SpecForge is a Next.js app for turning a product idea into a structured spec/PRD. The current backend foundation supports workspaces, projects, interview state, generated spec versions, and HTTP endpoints for workspace/project management.
+SpecForge is a Next.js app for turning a product idea into a structured spec/PRD. The platform provides a workspace-based environment where developers interact with an AI interviewer to satisfy product requirements, compile versioned specifications, and prepare delivery workflows.
 
 ## Repository Layout
 
@@ -69,22 +69,30 @@ ANTHROPIC_API_KEY=your-api-key
 
 ## Database Setup
 
-Create the local database:
+Create and configure your local PostgreSQL database. If you are on macOS using Homebrew and encounter symlink conflicts with a preinstalled `libpq` package, resolve them with the following sequence:
 
 ```bash
-createdb specforge
+# Unlink libpq and overwrite-link the postgresql server formula
+brew unlink libpq
+brew link --overwrite postgresql@16
+brew postinstall postgresql@16
+brew services start postgresql@16
 ```
 
-Load the schema:
+Next, configure the database user and password (`postgres:postgres`) to match the `.env` connection string:
 
 ```bash
-psql "$DATABASE_URL" -f db/schema.sql
-```
+# Create the postgres superuser (if not already created)
+createuser -s postgres
 
-On Windows PowerShell:
+# Set the password to 'postgres'
+psql postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
-```powershell
-psql $env:DATABASE_URL -f db/schema.sql
+# Create the specforge database
+createdb -U postgres specforge
+
+# Load the database schema
+psql -U postgres -d specforge -f db/schema.sql
 ```
 
 If PostgreSQL reports that `gen_random_uuid()` is unavailable, enable the extension once in the database:
@@ -143,16 +151,15 @@ Returns:
 }
 ```
 
-### Project Endpoints
+### Project & Chat Endpoints
 
-All project endpoints require:
+All project and conversation endpoints require a valid workspace token:
 
 ```http
 X-Workspace-Token: workspace-token
 ```
 
-Endpoints:
-
+#### Projects CRUD:
 ```http
 GET /api/projects
 POST /api/projects
@@ -160,20 +167,24 @@ PATCH /api/projects/:projectId
 DELETE /api/projects/:projectId
 ```
 
-Create or rename body:
+#### Conversational Interview Chat:
+```http
+GET /api/projects/:projectId/conversation    # Retrieve active chat and checklist progress
+POST /api/projects/:projectId/conversation   # Run a chat turn (takes {"message": "..."})
+```
 
-```json
-{
-  "name": "Project Name"
-}
+#### Spec Generation:
+```http
+GET /api/projects/:projectId/spec            # Retrieve the latest generated spec
+POST /api/projects/:projectId/spec           # Compile the specification document once converged
 ```
 
 Expected validation behavior:
 
 - Missing workspace token returns `400`
 - Unknown workspace token returns `404`
-- Missing or empty project name returns `400`
-- Project not found for rename/delete returns `404`
+- Missing or empty parameters/inputs returns `400`
+- Project not found for operations returns `404`
 
 ## Data Model
 
