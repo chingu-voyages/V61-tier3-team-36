@@ -120,4 +120,32 @@ describe("Spec Route Handler", () => {
     const body = await response.json();
     expect(body.error).toContain("Anthropic API key is required");
   });
+
+  it("returns 400 on POST if OpenAI provider is requested but OpenAI key is missing", async () => {
+    (authenticateWorkspace as any).mockResolvedValue({ workspace });
+    (sql as any).mockResolvedValue([{ id: "project-1", name: "Project One" }]);
+    (getOrCreateConversation as any).mockResolvedValue({
+      interview_state: { satisfiedSectionIds: [] },
+    });
+    (isConverged as any).mockReturnValue(true); // completed
+
+    const oldKey = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+
+    const request = new Request("http://localhost/api/projects/project-1/spec", {
+      method: "POST",
+      headers: {
+        "X-Workspace-Token": "token-1",
+        "X-Api-Provider": "openai"
+      },
+    });
+
+    const response = await POST(request, mockContext);
+    
+    process.env.OPENAI_API_KEY = oldKey;
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain("OpenAI API key is required");
+  });
 });

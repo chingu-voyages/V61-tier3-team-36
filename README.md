@@ -128,10 +128,13 @@ http://localhost:3000
 
 ### API Key Gate Configuration
 
-Upon visiting the workspace or project pages, you will be prompted to enter your Anthropic API Key:
-* **Local Storage**: The key is stored strictly locally in your browser's `localStorage` and is only sent via HTTPS request headers to our own backend proxy endpoints.
-* **Developer Bypass**: If you have `ANTHROPIC_API_KEY` configured in the server's `builder/.env` file, you can enter `env` in the UI prompt to bypass the client-side gate and use the server's environment variable.
-* **Updating/Clearing Key**: You can click the settings gear widget floating in the bottom-right of the page to modify or clear your API key at any time.
+Upon visiting the workspace or project pages, you will be prompted to select an AI Provider (Anthropic or OpenAI) and enter the corresponding API Key:
+* **AI Providers Supported**:
+  * **Anthropic**: Uses Claude (model: `claude-sonnet-4-6`). Keys must start with `sk-ant-` (or `env`).
+  * **OpenAI**: Uses GPT-4o (model: `gpt-4o`). Keys must start with `sk-` (or `env`).
+* **Local Storage**: Keys are stored strictly locally in your browser's `localStorage` (keys: `specforge_anthropic_key`, `specforge_openai_key`, provider: `specforge_api_provider`) and are only sent via HTTPS request headers to our own backend proxy endpoints.
+* **Developer Bypass**: If you have `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` configured in the server's `builder/.env` file, you can enter `env` in the UI prompt to bypass the client-side gate and use the server's environment variable.
+* **Updating/Clearing Key**: You can click the settings gear widget floating in the bottom-right of the page to modify or clear your active API key and provider choice at any time.
 
 ## Available Scripts
 
@@ -175,13 +178,15 @@ All project and conversation endpoints require a valid workspace token:
 X-Workspace-Token: workspace-token
 ```
 
-Additionally, the conversation and spec generation `POST` endpoints require a client-supplied Anthropic API key:
+Additionally, the conversation and spec generation `POST` endpoints require client-supplied API Key and Provider headers:
 
 ```http
-X-Anthropic-Api-Key: sk-ant-...
+X-Api-Provider: anthropic | openai
+X-Anthropic-Api-Key: sk-ant-...   # (Required if provider is anthropic)
+X-OpenAI-Api-Key: sk-...          # (Required if provider is openai)
 ```
 
-*(Note: If the server has a fallback key configured in `.env`, developers can send `env` in this header to bypass the client gate).*
+*(Note: If the server has a fallback key configured in `.env`, developers can send `env` in the key headers to bypass the client gate).*
 
 #### Projects CRUD:
 ```http

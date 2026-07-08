@@ -185,7 +185,10 @@ export default function ProjectDetailClient({
       { role: "user", content: messageToSend },
     ]);
 
-    const userApiKey = localStorage.getItem("specforge_anthropic_key") || "";
+    const provider = localStorage.getItem("specforge_api_provider") || "anthropic";
+    const userApiKey = localStorage.getItem(
+      provider === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
+    ) || "";
 
     try {
       const response = await fetch(
@@ -195,7 +198,10 @@ export default function ProjectDetailClient({
           headers: {
             "Content-Type": "application/json",
             "X-Workspace-Token": magicToken,
-            "X-Anthropic-Api-Key": userApiKey,
+            "X-Api-Provider": provider,
+            ...(provider === "openai"
+              ? { "X-OpenAI-Api-Key": userApiKey }
+              : { "X-Anthropic-Api-Key": userApiKey }),
           },
           body: JSON.stringify({ message: messageToSend }),
         }
@@ -250,7 +256,10 @@ export default function ProjectDetailClient({
     setIsGeneratingSpec(true);
     setError(null);
 
-    const userApiKey = localStorage.getItem("specforge_anthropic_key") || "";
+    const provider = localStorage.getItem("specforge_api_provider") || "anthropic";
+    const userApiKey = localStorage.getItem(
+      provider === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
+    ) || "";
 
     try {
       const response = await fetch(`/api/projects/${projectId}/spec`, {
@@ -258,7 +267,10 @@ export default function ProjectDetailClient({
         headers: {
           "Content-Type": "application/json",
           "X-Workspace-Token": magicToken,
-          "X-Anthropic-Api-Key": userApiKey,
+          "X-Api-Provider": provider,
+          ...(provider === "openai"
+            ? { "X-OpenAI-Api-Key": userApiKey }
+            : { "X-Anthropic-Api-Key": userApiKey }),
         },
       });
 

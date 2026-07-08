@@ -3,7 +3,7 @@
 /**
  * @file ApiKeyGate.tsx
  * @description Layout wrapper component that gates application access behind the presence of a user's
- * Anthropic API key stored in the browser's localStorage. Handles key persistence, validation,
+ * Anthropic or OpenAI API key stored in the browser's localStorage. Handles key persistence, validation,
  * and a developer bypass mechanism.
  */
 
@@ -15,6 +15,7 @@ interface ApiKeyGateProps {
 }
 
 export default function ApiKeyGate({ children }: ApiKeyGateProps) {
+  const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
   const [key, setKey] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,11 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
   useEffect(() => {
-    const storedKey = localStorage.getItem("specforge_anthropic_key");
+    const storedProvider = (localStorage.getItem("specforge_api_provider") || "anthropic") as "anthropic" | "openai";
+    setProvider(storedProvider);
+    const storedKey = localStorage.getItem(
+      storedProvider === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
+    );
     if (storedKey && storedKey.trim() !== "") {
       setIsAuthenticated(true);
       setKey(storedKey);
@@ -31,7 +36,7 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
   }, []);
 
   /**
-   * Validates and saves the client's Anthropic API Key in browser localStorage.
+   * Validates and saves the client's Anthropic or OpenAI API Key in browser localStorage.
    * If validation succeeds, sets authenticated state and closes settings overlay.
    */
   const handleSaveKey = (e: React.FormEvent) => {
@@ -42,13 +47,23 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
       return;
     }
 
-    // Support 'env' for bypass in development (falls back to server .env)
-    if (!trimmed.startsWith("sk-ant-") && trimmed !== "env") {
-      setError("Invalid Anthropic key format. Should start with 'sk-ant-' (or enter 'env' to use server-configured key)");
-      return;
+    if (provider === "openai") {
+      // Support 'env' for bypass in development (falls back to server .env)
+      if (!trimmed.startsWith("sk-") && trimmed !== "env") {
+        setError("Invalid OpenAI key format. Should start with 'sk-' (or enter 'env')");
+        return;
+      }
+      localStorage.setItem("specforge_openai_key", trimmed);
+    } else {
+      // Support 'env' for bypass in development (falls back to server .env)
+      if (!trimmed.startsWith("sk-ant-") && trimmed !== "env") {
+        setError("Invalid Anthropic key format. Should start with 'sk-ant-' (or enter 'env')");
+        return;
+      }
+      localStorage.setItem("specforge_anthropic_key", trimmed);
     }
 
-    localStorage.setItem("specforge_anthropic_key", trimmed);
+    localStorage.setItem("specforge_api_provider", provider);
     setIsAuthenticated(true);
     setError(null);
     setShowSettings(false);
@@ -67,7 +82,7 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
             <div className={styles.icon}>🔑</div>
             <h1 className={styles.title}>API Key Required</h1>
             <p className={styles.description}>
-              To start designing specifications and chatting with the AI, please enter your Anthropic API Key.
+              To start designing specifications and chatting with the AI, please configure your AI provider and enter your API Key.
             </p>
           </div>
 
@@ -80,14 +95,38 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
 
           <form className={styles.form} onSubmit={handleSaveKey}>
             <div className={styles.formGroup}>
+              <label htmlFor="apiProvider" className={styles.label}>
+                AI Provider
+              </label>
+              <select
+                id="apiProvider"
+                className={styles.input}
+                value={provider}
+                style={{ cursor: "pointer" }}
+                onChange={(e) => {
+                  const val = e.target.value as "anthropic" | "openai";
+                  setProvider(val);
+                  setError(null);
+                  const storedVal = localStorage.getItem(
+                    val === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
+                  ) || "";
+                  setKey(storedVal);
+                }}
+              >
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="openai">OpenAI (GPT-4o)</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
               <label htmlFor="apiKey" className={styles.label}>
-                Anthropic API Key
+                {provider === "openai" ? "OpenAI" : "Anthropic"} API Key
               </label>
               <div className={styles.inputWrapper}>
                 <input
                   id="apiKey"
                   type="password"
-                  placeholder="sk-ant-..."
+                  placeholder={provider === "openai" ? "sk-..." : "sk-ant-..."}
                   className={styles.input}
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
@@ -132,8 +171,8 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
         <button
           onClick={() => setShowSettings(true)}
           className={styles.settingsBtn}
-          title="Change Anthropic API Key"
-          aria-label="Change Anthropic API Key"
+          title="Change API Key"
+          aria-label="Change API Key"
         >
           ⚙️
         </button>

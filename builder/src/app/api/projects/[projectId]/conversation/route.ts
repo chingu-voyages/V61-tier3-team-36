@@ -98,19 +98,30 @@ export async function POST(request: Request, context: ProjectRouteContext) {
       { role: "user" as const, content: userMessage },
     ];
 
-    let apiKey = request.headers.get("X-Anthropic-Api-Key") || "";
-    if (apiKey.trim() === "" || apiKey === "env") {
-      apiKey = process.env.ANTHROPIC_API_KEY || "";
+    const providerHeader = request.headers.get("X-Api-Provider") || "anthropic";
+    const provider: "anthropic" | "openai" = providerHeader === "openai" ? "openai" : "anthropic";
+
+    let apiKey = "";
+    if (provider === "openai") {
+      apiKey = request.headers.get("X-OpenAI-Api-Key") || "";
+      if (apiKey.trim() === "" || apiKey === "env") {
+        apiKey = process.env.OPENAI_API_KEY || "";
+      }
+    } else {
+      apiKey = request.headers.get("X-Anthropic-Api-Key") || "";
+      if (apiKey.trim() === "" || apiKey === "env") {
+        apiKey = process.env.ANTHROPIC_API_KEY || "";
+      }
     }
 
     if (!apiKey || apiKey.trim() === "") {
       return NextResponse.json(
-        { error: "Anthropic API key is required. Please set up your API Key in the settings gear or server configuration." },
+        { error: `${provider === "openai" ? "OpenAI" : "Anthropic"} API key is required. Please set up your API Key in the settings gear or server configuration.` },
         { status: 400 }
       );
     }
 
-    const llmClient = createLLMClient(apiKey);
+    const llmClient = createLLMClient(apiKey, provider);
     const engine = new InterviewEngine(llmClient);
 
     const turnResult = await engine.runTurn({
