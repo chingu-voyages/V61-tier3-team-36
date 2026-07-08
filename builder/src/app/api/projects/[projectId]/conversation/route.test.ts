@@ -1,3 +1,9 @@
+/**
+ * @file route.test.ts (conversation)
+ * @description Unit tests for the conversation API route, verifying workspace authorization checks,
+ * active conversation retrievals, turn processing inputs validation, and Anthropic API key header validation.
+ */
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET, POST } from "./route";
 import { authenticateWorkspace } from "../../workspace-auth";

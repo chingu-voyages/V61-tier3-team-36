@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @file ApiKeyGate.tsx
+ * @description Layout wrapper component that gates application access behind the presence of a user's
+ * Anthropic API key stored in the browser's localStorage. Handles key persistence, validation,
+ * and a developer bypass mechanism.
+ */
+
 import { useState, useEffect } from "react";
 import styles from "./api-key.module.css";
 
@@ -23,6 +30,10 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
     setMounted(true);
   }, []);
 
+  /**
+   * Validates and saves the client's Anthropic API Key in browser localStorage.
+   * If validation succeeds, sets authenticated state and closes settings overlay.
+   */
   const handleSaveKey = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = key.trim();

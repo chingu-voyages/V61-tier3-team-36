@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * @file ProjectDetailClient.tsx
+ * @description Composed project workspace page that manages the interactive specification interview,
+ * progress checklists, client-side API Key Gate headers attachment, preformatted specification view,
+ * side-by-side history panel, and specification file export (.md).
+ */
+
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "./project.module.css";
@@ -158,6 +165,11 @@ export default function ProjectDetailClient({
     return display;
   })();
 
+  /**
+   * Optimistically posts the user's message, locks the input interface,
+   * transmits the text along with X-Anthropic-Api-Key headers to the chat API,
+   * and updates conversation messages and checklist states.
+   */
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (inputText.trim() === "" || isSending) return;
@@ -206,6 +218,10 @@ export default function ProjectDetailClient({
     }
   };
 
+  /**
+   * Refetches the full conversation list and checklist status from the database,
+   * typically used to rollback optimistic UI renders in case of upstream API failure.
+   */
   const refetchConversation = async () => {
     try {
       const response = await fetch(
@@ -226,6 +242,10 @@ export default function ProjectDetailClient({
     }
   };
 
+  /**
+   * Dispatches a POST request to compile the interview transcript into a structured spec document,
+   * passing X-Anthropic-Api-Key headers, and saves the resulting spec in local state.
+   */
   const handleGenerateSpec = async () => {
     setIsGeneratingSpec(true);
     setError(null);
@@ -256,6 +276,10 @@ export default function ProjectDetailClient({
     }
   };
 
+  /**
+   * Creates a text/markdown file Blob locally in the browser and triggers
+   * a download named specification-v{version}.md containing the spec markdown text.
+   */
   const handleDownloadSpec = () => {
     if (!spec) return;
     const blob = new Blob([spec.markdown], { type: "text/markdown;charset=utf-8;" });

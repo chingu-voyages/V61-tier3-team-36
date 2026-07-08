@@ -1,3 +1,10 @@
+/**
+ * @file route.ts (spec)
+ * @description API endpoint handler to load or compile the engineering specification document
+ * once the conversational intake converges. Handles X-Anthropic-Api-Key credentials authentication
+ * and appends new incremented versions to the spec table.
+ */
+
 import { NextResponse } from "next/server";
 import sql from "../../../../../../lib/db";
 import { getLatestSpec, createSpecVersion } from "../../../../../../lib/spec";
@@ -13,6 +20,9 @@ interface ProjectRouteContext {
   }>;
 }
 
+/**
+ * GET handler: Retrieves the latest compiled version of the product specification.
+ */
 export async function GET(request: Request, context: ProjectRouteContext) {
   const auth = await authenticateWorkspace(request);
   if (auth.response) {
@@ -39,6 +49,10 @@ export async function GET(request: Request, context: ProjectRouteContext) {
   }
 }
 
+/**
+ * POST handler: Synthesizes the interview transcript into a structured spec using the LLM.
+ * Verifies convergence of the checklist, extracts API key headers, and saves as a new version.
+ */
 export async function POST(request: Request, context: ProjectRouteContext) {
   const auth = await authenticateWorkspace(request);
   if (auth.response) {

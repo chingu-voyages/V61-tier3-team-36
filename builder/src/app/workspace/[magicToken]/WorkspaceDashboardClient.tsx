@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * @file WorkspaceDashboardClient.tsx
+ * @description Workspace projects dashboard that displays the project listing, a form to trigger
+ * new project creation, and prominent warnings advising users to bookmark the URL. Wrapped in ApiKeyGate.
+ */
+
 import { useState } from "react";
 import Link from "next/link";
 import styles from "./workspace.module.css";
@@ -26,6 +32,10 @@ export default function WorkspaceDashboardClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Dispatches a project creation request to the API, adding the newly created
+   * project to the dashboard list state upon success.
+   */
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (projectName.trim() === "") return;

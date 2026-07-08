@@ -15,6 +15,15 @@ SpecForge is a Next.js app for turning a product idea into a structured spec/PRD
 +-- specs/                   # Product/spec documents
 ```
 
+## Core Features
+
+* **Workspace Bootstrapping**: Dynamic workspace URL creation at `/workspace/[magicToken]` on first visit; persistent and bookmarkable workspace access keys.
+* **Projects Dashboard**: List, open, and create projects inside your tokenized workspace.
+* **API Key Gate**: Secure, client-side overlay prompting for an Anthropic API Key. Stored in `localStorage` and sent over HTTPS request headers; supports `env` bypass.
+* **Conversational Spec Interview**: Guides users through 7 required spec sections (e.g. Problems, Features, Scopes, Flow, Constraints) with real-time progress checklist tracking.
+* **Spec View & Export**: Renders compiled versioned specs in a preformatted scrollable block and supports downloading as `.md` file exports.
+* **Split Grid Workspace**: Transitions into a split layout presenting the Spec Document on the left column and the scrollable Interview History on the right column.
+
 ## Tech Stack
 
 - Next.js 16 App Router

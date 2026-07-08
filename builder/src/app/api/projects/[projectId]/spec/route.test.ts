@@ -1,3 +1,9 @@
+/**
+ * @file route.test.ts (spec)
+ * @description Unit tests for the spec API route, verifying workspace authorization checks,
+ * latest spec retrievals, convergence requirements validation, and Anthropic API key header validation.
+ */
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET, POST } from "./route";
 import { authenticateWorkspace } from "../../workspace-auth";

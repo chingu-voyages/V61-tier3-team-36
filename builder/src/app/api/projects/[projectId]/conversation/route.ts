@@ -1,3 +1,10 @@
+/**
+ * @file route.ts (conversation)
+ * @description API endpoint handler for project conversational intake sessions. Resolves workspace
+ * authentication, queries conversation history, processes incoming turns using the AI InterviewEngine
+ * and client-supplied headers key, and logs state changes.
+ */
+
 import { NextResponse } from "next/server";
 import sql from "../../../../../../lib/db";
 import { getOrCreateConversation, saveConversationTurn } from "../../../../../../lib/conversation";
@@ -12,6 +19,10 @@ interface ProjectRouteContext {
   }>;
 }
 
+/**
+ * GET handler: Retrieves the active conversation messages history and checklist progress
+ * states for a project, verifying workspace security constraints first.
+ */
 export async function GET(request: Request, context: ProjectRouteContext) {
   const auth = await authenticateWorkspace(request);
   if (auth.response) {
@@ -38,6 +49,10 @@ export async function GET(request: Request, context: ProjectRouteContext) {
   }
 }
 
+/**
+ * POST handler: Executes an intake interview turn. Extracts custom user API Key headers,
+ * invokes InterviewEngine to satisfy checkpoints, saves progress, and returns next clarifying question.
+ */
 export async function POST(request: Request, context: ProjectRouteContext) {
   const auth = await authenticateWorkspace(request);
   if (auth.response) {
