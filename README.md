@@ -117,6 +117,13 @@ Open:
 http://localhost:3000
 ```
 
+### API Key Gate Configuration
+
+Upon visiting the workspace or project pages, you will be prompted to enter your Anthropic API Key:
+* **Local Storage**: The key is stored strictly locally in your browser's `localStorage` and is only sent via HTTPS request headers to our own backend proxy endpoints.
+* **Developer Bypass**: If you have `ANTHROPIC_API_KEY` configured in the server's `builder/.env` file, you can enter `env` in the UI prompt to bypass the client-side gate and use the server's environment variable.
+* **Updating/Clearing Key**: You can click the settings gear widget floating in the bottom-right of the page to modify or clear your API key at any time.
+
 ## Available Scripts
 
 Run these from `builder/`:
@@ -158,6 +165,14 @@ All project and conversation endpoints require a valid workspace token:
 ```http
 X-Workspace-Token: workspace-token
 ```
+
+Additionally, the conversation and spec generation `POST` endpoints require a client-supplied Anthropic API key:
+
+```http
+X-Anthropic-Api-Key: sk-ant-...
+```
+
+*(Note: If the server has a fallback key configured in `.env`, developers can send `env` in this header to bypass the client gate).*
 
 #### Projects CRUD:
 ```http
