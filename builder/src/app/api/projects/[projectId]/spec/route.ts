@@ -67,11 +67,15 @@ export async function POST(request: Request, context: ProjectRouteContext) {
       );
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    let apiKey = request.headers.get("X-Anthropic-Api-Key") || "";
+    if (apiKey.trim() === "" || apiKey === "env") {
+      apiKey = process.env.ANTHROPIC_API_KEY || "";
+    }
+
     if (!apiKey || apiKey.trim() === "") {
       return NextResponse.json(
-        { error: "Anthropic API key is not configured on the server. Please add ANTHROPIC_API_KEY to your environment variables." },
-        { status: 500 }
+        { error: "Anthropic API key is required. Please set up your API Key in the settings gear or server configuration." },
+        { status: 400 }
       );
     }
 

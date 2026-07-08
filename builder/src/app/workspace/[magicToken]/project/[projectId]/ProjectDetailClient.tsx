@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "./project.module.css";
+import ApiKeyGate from "../../../../components/ApiKeyGate";
 import { SPEC_SECTIONS, type SpecSection } from "../../../../../../lib/spec-sections";
 
 import type { ConversationMessage } from "../../../../../../lib/conversation";
@@ -172,6 +173,8 @@ export default function ProjectDetailClient({
       { role: "user", content: messageToSend },
     ]);
 
+    const userApiKey = localStorage.getItem("specforge_anthropic_key") || "";
+
     try {
       const response = await fetch(
         `/api/projects/${projectId}/conversation`,
@@ -180,6 +183,7 @@ export default function ProjectDetailClient({
           headers: {
             "Content-Type": "application/json",
             "X-Workspace-Token": magicToken,
+            "X-Anthropic-Api-Key": userApiKey,
           },
           body: JSON.stringify({ message: messageToSend }),
         }
@@ -226,12 +230,15 @@ export default function ProjectDetailClient({
     setIsGeneratingSpec(true);
     setError(null);
 
+    const userApiKey = localStorage.getItem("specforge_anthropic_key") || "";
+
     try {
       const response = await fetch(`/api/projects/${projectId}/spec`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Workspace-Token": magicToken,
+          "X-Anthropic-Api-Key": userApiKey,
         },
       });
 
@@ -255,7 +262,8 @@ export default function ProjectDetailClient({
   const isConverged = satisfiedCount === SPEC_SECTIONS.length;
 
   return (
-    <div className={styles.container}>
+    <ApiKeyGate>
+      <div className={styles.container}>
       <nav className={styles.breadcrumb}>
         <Link href={`/workspace/${magicToken}`}>← Back to Workspace Dashboard</Link>
       </nav>
@@ -446,5 +454,6 @@ export default function ProjectDetailClient({
         </main>
       </div>
     </div>
+  </ApiKeyGate>
   );
 }
