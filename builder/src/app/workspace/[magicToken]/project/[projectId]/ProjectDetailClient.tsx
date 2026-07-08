@@ -344,44 +344,82 @@ export default function ProjectDetailClient({
           )}
 
           {/* Spec Document View - Rendered once generated */}
-          {spec && (
-            <div className={`${styles.card} ${styles.specContainer} animate-fade-in`}>
-              <div className={styles.specHeader}>
-                <h2 className={styles.specTitle}>Specification Document</h2>
-                <span className={styles.specVersionBadge}>
-                  Version {spec.version}
-                </span>
-              </div>
-              
-              {/* v1 renders Markdown as preformatted text */}
-              <pre className={styles.specPre}>{spec.markdown}</pre>
+          {spec ? (
+            <div className={styles.workspaceSplitGrid}>
+              <div className={`${styles.card} ${styles.specContainer} animate-fade-in`}>
+                <div className={styles.specHeader}>
+                  <h2 className={styles.specTitle}>Specification Document</h2>
+                  <span className={styles.specVersionBadge}>
+                    Version {spec.version}
+                  </span>
+                </div>
+                
+                {/* v1 renders Markdown as preformatted text */}
+                <pre className={styles.specPre}>{spec.markdown}</pre>
 
-              <div className={styles.specActions}>
-                <button
-                  onClick={handleDownloadSpec}
-                  className={styles.downloadBtn}
-                  title="Download spec as .md file"
-                >
-                  <span className={styles.downloadIcon}>📥</span>
-                  Download as Markdown (.md)
-                </button>
-
-                {isConverged && (
+                <div className={styles.specActions}>
                   <button
-                    onClick={handleGenerateSpec}
-                    disabled={isGeneratingSpec}
-                    className={styles.generateBtn}
-                    style={{ marginTop: 0 }}
+                    onClick={handleDownloadSpec}
+                    className={styles.downloadBtn}
+                    title="Download spec as .md file"
                   >
-                    {isGeneratingSpec ? "Regenerating..." : "Regenerate Spec Document"}
+                    <span className={styles.downloadIcon}>📥</span>
+                    Download as Markdown (.md)
                   </button>
-                )}
+
+                  {isConverged && (
+                    <button
+                      onClick={handleGenerateSpec}
+                      disabled={isGeneratingSpec}
+                      className={styles.generateBtn}
+                      style={{ marginTop: 0 }}
+                    >
+                      {isGeneratingSpec ? "Regenerating..." : "Regenerate Spec Document"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* View-only chat transcript on the right */}
+              <div className={`${styles.card} ${styles.chatPane} ${styles.chatPaneCompact}`}>
+                <div className={styles.chatMessagesCompactHeader}>
+                  <h3>Interview History</h3>
+                </div>
+                <div className={styles.chatMessages}>
+                  {displayMessages.length === 0 && !isSending ? (
+                    <div className={styles.welcomeBubble}>
+                      <h3 className={styles.welcomeTitle}>
+                        Let's design your product spec!
+                      </h3>
+                    </div>
+                  ) : (
+                    displayMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`${styles.messageRow} ${
+                          msg.sender === "user"
+                            ? styles.messageRowUser
+                            : styles.messageRowAssistant
+                        }`}
+                      >
+                        <div
+                          className={`${styles.messageBubble} ${
+                            msg.sender === "user"
+                              ? styles.messageBubbleUser
+                              : styles.messageBubbleAssistant
+                          }`}
+                          style={{ fontSize: "0.85rem", padding: "0.6rem 0.85rem" }}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
             </div>
-          )}
-
-          {/* Conversational Interview Window */}
-          {!spec && (
+          ) : (
             <div className={`${styles.card} ${styles.chatPane}`}>
               <div className={styles.chatMessages}>
                 {displayMessages.length === 0 && !isSending ? (
