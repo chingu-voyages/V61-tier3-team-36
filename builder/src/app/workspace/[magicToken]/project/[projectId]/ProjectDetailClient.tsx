@@ -256,6 +256,18 @@ export default function ProjectDetailClient({
     }
   };
 
+  const handleDownloadSpec = () => {
+    if (!spec) return;
+    const blob = new Blob([spec.markdown], { type: "text/markdown;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `specification-v${spec.version}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Compute satisfied sections percentage
   const satisfiedCount = interviewState.satisfiedSectionIds.length;
   const progressPercent = Math.round((satisfiedCount / SPEC_SECTIONS.length) * 100);
@@ -324,6 +336,13 @@ export default function ProjectDetailClient({
 
         {/* Main Section: Interview Chat & Final Spec */}
         <main className={styles.mainArea}>
+          {error && (
+            <div className={styles.errorBox} style={{ marginBottom: "1.5rem" }}>
+              <span className={styles.errorTitle}>Error Processing Request</span>
+              <p>{error}</p>
+            </div>
+          )}
+
           {/* Spec Document View - Rendered once generated */}
           {spec && (
             <div className={`${styles.card} ${styles.specContainer} animate-fade-in`}>
@@ -333,20 +352,31 @@ export default function ProjectDetailClient({
                   Version {spec.version}
                 </span>
               </div>
-              <div
-                className={styles.specContent}
-                dangerouslySetInnerHTML={{ __html: parseMarkdown(spec.markdown) }}
-              />
-              {isConverged && (
+              
+              {/* v1 renders Markdown as preformatted text */}
+              <pre className={styles.specPre}>{spec.markdown}</pre>
+
+              <div className={styles.specActions}>
                 <button
-                  onClick={handleGenerateSpec}
-                  disabled={isGeneratingSpec}
-                  className={styles.generateBtn}
-                  style={{ alignSelf: "flex-start", marginTop: "1rem" }}
+                  onClick={handleDownloadSpec}
+                  className={styles.downloadBtn}
+                  title="Download spec as .md file"
                 >
-                  {isGeneratingSpec ? "Regenerating..." : "Regenerate Spec Document"}
+                  <span className={styles.downloadIcon}>📥</span>
+                  Download as Markdown (.md)
                 </button>
-              )}
+
+                {isConverged && (
+                  <button
+                    onClick={handleGenerateSpec}
+                    disabled={isGeneratingSpec}
+                    className={styles.generateBtn}
+                    style={{ marginTop: 0 }}
+                  >
+                    {isGeneratingSpec ? "Regenerating..." : "Regenerate Spec Document"}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -398,13 +428,6 @@ export default function ProjectDetailClient({
                 )}
                 <div ref={messagesEndRef} />
               </div>
-
-              {error && (
-                <div className={styles.errorBox}>
-                  <span className={styles.errorTitle}>Upstream Error</span>
-                  <p>{error}</p>
-                </div>
-              )}
 
               {/* Chat Input Interface */}
               {!isConverged ? (

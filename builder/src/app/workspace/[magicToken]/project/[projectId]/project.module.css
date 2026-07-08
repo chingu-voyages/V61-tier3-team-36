@@ -518,3 +518,51 @@
   padding: 0;
   font-size: 0.9rem;
 }
+
+.specPre {
+  font-family: var(--font-mono);
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-height: 60vh;
+  margin-bottom: 1.5rem;
+}
+
+.specActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.downloadBtn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.downloadBtn:hover {
+  background-color: rgba(99, 102, 241, 0.08);
+  border-color: var(--accent-hover);
+}
+
+.downloadIcon {
+  font-size: 1.1rem;
+}
+
