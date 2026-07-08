@@ -33,6 +33,7 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
   }
 
   return NextResponse.json(serializeProject(project));
+  return NextResponse.json(project);
 }
 
 export async function DELETE(request: Request, context: ProjectRouteContext) {
