@@ -44,8 +44,9 @@ export async function GET(request: Request, context: ProjectRouteContext) {
   try {
     const conversation = await getOrCreateConversation(projectId);
     return NextResponse.json(conversation);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to retrieve conversation" }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message || "Failed to retrieve conversation" }, { status: 500 });
   }
 }
 
@@ -98,30 +99,53 @@ export async function POST(request: Request, context: ProjectRouteContext) {
       { role: "user" as const, content: userMessage },
     ];
 
-    const providerHeader = request.headers.get("X-Api-Provider") || "anthropic";
-    const provider: "anthropic" | "openai" = providerHeader === "openai" ? "openai" : "anthropic";
+    // --- PROVIDER & API KEY RESOLUTION ---
+    const providerHeader = request.headers.get("X-Api-Provider");
+    const validProviders = ["anthropic", "openai", "gemini"] as const;
+    type AIProvider = typeof validProviders[number];
+    
+    // Safely resolve provider, defaulting to "anthropic" if missing or invalid
+    const provider: AIProvider = validProviders.includes(providerHeader as AIProvider)
+      ? (providerHeader as AIProvider)
+      : "anthropic";
 
-    let apiKey = "";
-    if (provider === "openai") {
-      apiKey = request.headers.get("X-OpenAI-Api-Key") || "";
-      if (apiKey.trim() === "" || apiKey === "env") {
-        apiKey = process.env.OPENAI_API_KEY || "";
-      }
-    } else {
-      apiKey = request.headers.get("X-Anthropic-Api-Key") || "";
-      if (apiKey.trim() === "" || apiKey === "env") {
-        apiKey = process.env.ANTHROPIC_API_KEY || "";
-      }
+    // Centralized configuration for headers, environment fallbacks, and display names
+    const providerSettings: Record<AIProvider, { header: string; envKey: string | undefined; displayName: string }> = {
+      anthropic: {
+        header: "X-Anthropic-Api-Key",
+        envKey: process.env.ANTHROPIC_API_KEY,
+        displayName: "Anthropic",
+      },
+      openai: {
+        header: "X-OpenAI-Api-Key",
+        envKey: process.env.OPENAI_API_KEY,
+        displayName: "OpenAI",
+      },
+      gemini: {
+        header: "X-Gemini-Api-Key",
+        envKey: process.env.GEMINI_API_KEY,
+        displayName: "Google Gemini",
+      },
+    };
+
+    const settings = providerSettings[provider];
+    let apiKey = request.headers.get(settings.header) || "";
+
+    // Support the "env" keyword to fall back to server environment variables
+    if (apiKey.trim() === "" || apiKey === "env") {
+      apiKey = settings.envKey || "";
     }
 
     if (!apiKey || apiKey.trim() === "") {
       return NextResponse.json(
-        { error: `${provider === "openai" ? "OpenAI" : "Anthropic"} API key is required. Please set up your API Key in the settings gear or server configuration.` },
+        { error: `${settings.displayName} API key is required. Please set up your API Key in the settings gear or server configuration.` },
         { status: 400 }
       );
     }
 
     const llmClient = createLLMClient(apiKey, provider);
+    // --- END PROVIDER & API KEY RESOLUTION ---
+
     const engine = new InterviewEngine(llmClient);
 
     const turnResult = await engine.runTurn({
@@ -140,9 +164,10 @@ export async function POST(request: Request, context: ProjectRouteContext) {
       state: turnResult.updatedState,
       messages: turnResult.updatedMessages,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: error.message || "An error occurred while calling the Anthropic API." },
+      { error: message || "An error occurred while calling the Anthropic API." },
       { status: 500 }
     );
   }

@@ -3,40 +3,100 @@
 /**
  * @file ApiKeyGate.tsx
  * @description Layout wrapper component that gates application access behind the presence of a user's
- * Anthropic or OpenAI API key stored in the browser's localStorage. Handles key persistence, validation,
+ * Anthropic, OpenAI, or Google Gemini API key stored in the browser's localStorage. Handles key persistence, validation,
  * and a developer bypass mechanism.
  */
 
 import { useState, useEffect } from "react";
 import styles from "./api-key.module.css";
 
+type AIProvider = "anthropic" | "openai" | "gemini";
+
+interface ProviderConfig {
+  storageKey: string;
+  label: string;
+  placeholder: string;
+  prefix: string;
+  errorMessage: string;
+}
+
+/**
+ * Centralized configuration for all supported AI providers.
+ * This eliminates duplicated if/else chains for localStorage keys, labels, placeholders, and validation.
+ */
+const PROVIDER_CONFIG: Record<AIProvider, ProviderConfig> = {
+  anthropic: {
+    storageKey: "specforge_anthropic_key",
+    label: "Anthropic API Key",
+    placeholder: "sk-ant-...",
+    prefix: "sk-ant-",
+    errorMessage: "Invalid Anthropic key format. Should start with 'sk-ant-' (or enter 'env')",
+  },
+  openai: {
+    storageKey: "specforge_openai_key",
+    label: "OpenAI API Key",
+    placeholder: "sk-...",
+    prefix: "sk-",
+    errorMessage: "Invalid OpenAI key format. Should start with 'sk-' (or enter 'env')",
+  },
+  gemini: {
+    storageKey: "specforge_gemini_key",
+    label: "Google Gemini API Key",
+    placeholder: "AIza...",
+    prefix: "AIza",
+    errorMessage: "Invalid Gemini key format. Should start with 'AIza' (or enter 'env')",
+  },
+};
+
 interface ApiKeyGateProps {
   children: React.ReactNode;
 }
 
 export default function ApiKeyGate({ children }: ApiKeyGateProps) {
-  const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
+  const [provider, setProvider] = useState<AIProvider>("anthropic");
   const [key, setKey] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
+  console.log("=== ApiKeyGate Render ===");
+  console.log({
+  mounted,
+  isAuthenticated,
+  showSettings,
+  provider,
+  key,
+});
+
   useEffect(() => {
-    const storedProvider = (localStorage.getItem("specforge_api_provider") || "anthropic") as "anthropic" | "openai";
-    setProvider(storedProvider);
-    const storedKey = localStorage.getItem(
-      storedProvider === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
-    );
-    if (storedKey && storedKey.trim() !== "") {
-      setIsAuthenticated(true);
-      setKey(storedKey);
-    }
-    setMounted(true);
-  }, []);
+  console.log("ApiKeyGate useEffect");
+
+  const storedProvider =
+    (localStorage.getItem("specforge_api_provider") || "anthropic") as AIProvider;
+
+  console.log("Stored provider:", storedProvider);
+
+  const config = PROVIDER_CONFIG[storedProvider];
+  console.log("Provider config:", config);
+
+  const storedKey = localStorage.getItem(config.storageKey);
+  console.log("Stored key:", storedKey);
+
+  if (storedKey && storedKey.trim() !== "") {
+    console.log("Setting authenticated");
+    setIsAuthenticated(true);
+    setKey(storedKey);
+  }
+
+  setProvider(storedProvider);
+  setMounted(true);
+
+  console.log("Mounted set to true");
+}, []);
 
   /**
-   * Validates and saves the client's Anthropic or OpenAI API Key in browser localStorage.
+   * Validates and saves the client's API Key in browser localStorage.
    * If validation succeeds, sets authenticated state and closes settings overlay.
    */
   const handleSaveKey = (e: React.FormEvent) => {
@@ -47,34 +107,43 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
       return;
     }
 
-    if (provider === "openai") {
-      // Support 'env' for bypass in development (falls back to server .env)
-      if (!trimmed.startsWith("sk-") && trimmed !== "env") {
-        setError("Invalid OpenAI key format. Should start with 'sk-' (or enter 'env')");
-        return;
-      }
-      localStorage.setItem("specforge_openai_key", trimmed);
-    } else {
-      // Support 'env' for bypass in development (falls back to server .env)
-      if (!trimmed.startsWith("sk-ant-") && trimmed !== "env") {
-        setError("Invalid Anthropic key format. Should start with 'sk-ant-' (or enter 'env')");
-        return;
-      }
-      localStorage.setItem("specforge_anthropic_key", trimmed);
+    const config = PROVIDER_CONFIG[provider];
+
+    // Support 'env' for bypass in development (falls back to server .env)
+    if (!trimmed.startsWith(config.prefix) && trimmed !== "env") {
+      setError(config.errorMessage);
+      return;
     }
 
+    localStorage.setItem(config.storageKey, trimmed);
     localStorage.setItem("specforge_api_provider", provider);
+    
     setIsAuthenticated(true);
     setError(null);
     setShowSettings(false);
   };
 
   // Prevent SSR hydration mismatch by waiting until client-side mount
+  console.log("Checking mounted:", mounted);
   if (!mounted) {
     return <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-base)" }} />;
   }
+  
+  console.log(JSON.stringify({
+  isAuthenticated,
+  showSettings,
+}));
+
+console.log(
+  "Condition:",
+  !isAuthenticated || showSettings
+);
 
   if (!isAuthenticated || showSettings) {
+
+    console.log("Rendering API Key Modal");
+    const config = PROVIDER_CONFIG[provider];
+
     return (
       <div className={styles.overlay}>
         <div className={styles.modal}>
@@ -104,29 +173,28 @@ export default function ApiKeyGate({ children }: ApiKeyGateProps) {
                 value={provider}
                 style={{ cursor: "pointer" }}
                 onChange={(e) => {
-                  const val = e.target.value as "anthropic" | "openai";
+                  const val = e.target.value as AIProvider;
                   setProvider(val);
                   setError(null);
-                  const storedVal = localStorage.getItem(
-                    val === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
-                  ) || "";
+                  const storedVal = localStorage.getItem(PROVIDER_CONFIG[val].storageKey) || "";
                   setKey(storedVal);
                 }}
               >
                 <option value="anthropic">Anthropic (Claude)</option>
                 <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="gemini">Google Gemini</option>
               </select>
             </div>
 
             <div className={styles.formGroup}>
               <label htmlFor="apiKey" className={styles.label}>
-                {provider === "openai" ? "OpenAI" : "Anthropic"} API Key
+                {config.label}
               </label>
               <div className={styles.inputWrapper}>
                 <input
                   id="apiKey"
                   type="password"
-                  placeholder={provider === "openai" ? "sk-..." : "sk-ant-..."}
+                  placeholder={config.placeholder}
                   className={styles.input}
                   value={key}
                   onChange={(e) => setKey(e.target.value)}

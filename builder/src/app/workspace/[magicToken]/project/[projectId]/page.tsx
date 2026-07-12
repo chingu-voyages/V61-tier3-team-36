@@ -29,31 +29,42 @@ export default async function ProjectPage(props: ProjectPageProps) {
 
   // Verify project ownership
   let project;
+  console.log("Workspace ID:", workspace.id);
+  console.log("Project ID:", projectId);
   try {
-    const [row] = await sql<{ id: string; name: string }[]>`
-      SELECT id, name
-      FROM project
-      WHERE id = ${projectId} AND workspace_id = ${workspace.id}
-    `;
+    const rows = await sql<{
+  id: string;
+  name: string;
+  workspace_id: string;
+}[]>`
+  SELECT id, name, workspace_id
+  FROM project
+  WHERE id = ${projectId}
+`;
+
+console.log("Rows returned:", rows);
+
+const [row] = rows;
+project = row;
     project = row;
   } catch (error) {
     console.error("Failed to retrieve project details", error);
   }
 
   if (!project) {
-    notFound();
-  }
-
+  console.log("Project not found in page.tsx");
+  notFound();
+}
   // Fetch or create conversation and latest spec
   let conversation;
   let latestSpec = null;
   try {
     conversation = await getOrCreateConversation(projectId);
     latestSpec = await getLatestSpec(projectId);
-  } catch (error) {
-    console.error("Failed to initialize conversation or spec", error);
-    notFound();
-  }
+  }  catch (error) {
+  console.error("Failed to initialize conversation or spec", error);
+  notFound();
+}
 
   // Serialize Date objects to strings for Client Component boundary safety
   const serializedConversation = {

@@ -1,7 +1,8 @@
 /**
  * @file route.test.ts (spec)
  * @description Unit tests for the spec API route, verifying workspace authorization checks,
- * latest spec retrievals, convergence requirements validation, and Anthropic API key header validation.
+ * latest spec retrievals, convergence requirements validation, and API key header validation 
+ * across Anthropic, OpenAI, and Google Gemini providers.
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -11,6 +12,7 @@ import sql from "../../../../../../lib/db";
 import { getLatestSpec, createSpecVersion } from "../../../../../../lib/spec";
 import { getOrCreateConversation } from "../../../../../../lib/conversation";
 import { isConverged } from "../../../../../../lib/interview-state";
+import { createLLMClient } from "../../../../../../lib/llm-client";
 
 vi.mock("../../workspace-auth", () => ({
   authenticateWorkspace: vi.fn(),
@@ -31,6 +33,10 @@ vi.mock("../../../../../../lib/conversation", () => ({
 
 vi.mock("../../../../../../lib/interview-state", () => ({
   isConverged: vi.fn(),
+}));
+
+vi.mock("../../../../../../lib/llm-client", () => ({
+  createLLMClient: vi.fn(),
 }));
 
 describe("Spec Route Handler", () => {
@@ -147,5 +153,63 @@ describe("Spec Route Handler", () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error).toContain("OpenAI API key is required");
+  });
+
+  it("returns 400 on POST if Gemini provider is requested but Gemini key is missing", async () => {
+    (authenticateWorkspace as any).mockResolvedValue({ workspace });
+    (sql as any).mockResolvedValue([{ id: "project-1", name: "Project One" }]);
+    (getOrCreateConversation as any).mockResolvedValue({
+      interview_state: { satisfiedSectionIds: [] },
+    });
+    (isConverged as any).mockReturnValue(true); // completed
+
+    const oldKey = process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+
+    const request = new Request("http://localhost/api/projects/project-1/spec", {
+      method: "POST",
+      headers: {
+        "X-Workspace-Token": "token-1",
+        "X-Api-Provider": "gemini"
+      },
+    });
+
+    const response = await POST(request, mockContext);
+    
+    process.env.GEMINI_API_KEY = oldKey;
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toContain("Google Gemini API key is required");
+  });
+
+  it("uses process.env.GEMINI_API_KEY and constructs correct LLM client when header is 'env'", async () => {
+    (authenticateWorkspace as any).mockResolvedValue({ workspace });
+    (sql as any).mockResolvedValue([{ id: "project-1", name: "Project One" }]);
+    (getOrCreateConversation as any).mockResolvedValue({
+      interview_state: { satisfiedSectionIds: ["section-1"] },
+      messages: [],
+    });
+    (isConverged as any).mockReturnValue(true);
+    (createSpecVersion as any).mockResolvedValue({ id: "spec-1" });
+
+    const oldKey = process.env.GEMINI_API_KEY;
+    process.env.GEMINI_API_KEY = "env-gemini-key";
+
+    const request = new Request("http://localhost/api/projects/project-1/spec", {
+      method: "POST",
+      headers: {
+        "X-Workspace-Token": "token-1",
+        "X-Api-Provider": "gemini",
+        "X-Gemini-Api-Key": "env"
+      },
+    });
+
+    await POST(request, mockContext);
+
+    process.env.GEMINI_API_KEY = oldKey;
+
+    // Verify that the fallback environment variable was used and passed to the client factory
+    expect(createLLMClient).toHaveBeenCalledWith("env-gemini-key", "gemini");
   });
 });

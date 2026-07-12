@@ -42,6 +42,38 @@ interface DisplayMessage {
   text: string;
 }
 
+// --- AI Provider Header Helpers ---
+type AIProvider = "anthropic" | "openai" | "gemini";
+
+const PROVIDER_STORAGE_KEYS: Record<AIProvider, string> = {
+  anthropic: "specforge_anthropic_key",
+  openai: "specforge_openai_key",
+  gemini: "specforge_gemini_key",
+};
+
+const PROVIDER_HEADER_KEYS: Record<AIProvider, string> = {
+  anthropic: "X-Anthropic-Api-Key",
+  openai: "X-OpenAI-Api-Key",
+  gemini: "X-Gemini-Api-Key",
+};
+
+/**
+ * Retrieves the selected AI provider and its corresponding API key from localStorage,
+ * and formats them into the correct HTTP headers for the backend API.
+ */
+function getAIHeaders(): Record<string, string> {
+  const provider = (localStorage.getItem("specforge_api_provider") || "anthropic") as AIProvider;
+  const storageKey = PROVIDER_STORAGE_KEYS[provider] || PROVIDER_STORAGE_KEYS.anthropic;
+  const apiKey = localStorage.getItem(storageKey) || "";
+  const headerKey = PROVIDER_HEADER_KEYS[provider] || PROVIDER_HEADER_KEYS.anthropic;
+
+  return {
+    "X-Api-Provider": provider,
+    [headerKey]: apiKey,
+  };
+}
+// --- End AI Provider Header Helpers ---
+
 // Custom Markdown parser for premium Spec presentation
 function parseMarkdown(md: string): string {
   if (!md) return "";
@@ -167,7 +199,7 @@ export default function ProjectDetailClient({
 
   /**
    * Optimistically posts the user's message, locks the input interface,
-   * transmits the text along with X-Anthropic-Api-Key headers to the chat API,
+   * transmits the text along with provider-specific headers to the chat API,
    * and updates conversation messages and checklist states.
    */
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -185,10 +217,7 @@ export default function ProjectDetailClient({
       { role: "user", content: messageToSend },
     ]);
 
-    const provider = localStorage.getItem("specforge_api_provider") || "anthropic";
-    const userApiKey = localStorage.getItem(
-      provider === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
-    ) || "";
+    const aiHeaders = getAIHeaders();
 
     try {
       const response = await fetch(
@@ -198,10 +227,7 @@ export default function ProjectDetailClient({
           headers: {
             "Content-Type": "application/json",
             "X-Workspace-Token": magicToken,
-            "X-Api-Provider": provider,
-            ...(provider === "openai"
-              ? { "X-OpenAI-Api-Key": userApiKey }
-              : { "X-Anthropic-Api-Key": userApiKey }),
+            ...aiHeaders,
           },
           body: JSON.stringify({ message: messageToSend }),
         }
@@ -250,16 +276,13 @@ export default function ProjectDetailClient({
 
   /**
    * Dispatches a POST request to compile the interview transcript into a structured spec document,
-   * passing X-Anthropic-Api-Key headers, and saves the resulting spec in local state.
+   * passing provider-specific headers, and saves the resulting spec in local state.
    */
   const handleGenerateSpec = async () => {
     setIsGeneratingSpec(true);
     setError(null);
 
-    const provider = localStorage.getItem("specforge_api_provider") || "anthropic";
-    const userApiKey = localStorage.getItem(
-      provider === "openai" ? "specforge_openai_key" : "specforge_anthropic_key"
-    ) || "";
+    const aiHeaders = getAIHeaders();
 
     try {
       const response = await fetch(`/api/projects/${projectId}/spec`, {
@@ -267,10 +290,7 @@ export default function ProjectDetailClient({
         headers: {
           "Content-Type": "application/json",
           "X-Workspace-Token": magicToken,
-          "X-Api-Provider": provider,
-          ...(provider === "openai"
-            ? { "X-OpenAI-Api-Key": userApiKey }
-            : { "X-Anthropic-Api-Key": userApiKey }),
+          ...aiHeaders,
         },
       });
 
@@ -464,8 +484,8 @@ export default function ProjectDetailClient({
                       Let's design your product spec!
                     </h3>
                     <p className={styles.welcomeText}>
-                      Describe your product idea to Claude below. Explain the core features, 
-                      who will use it, and what problem it solves. Claude will guide you 
+                      Describe your product idea to the AI below. Explain the core features, 
+                      who will use it, and what problem it solves. The AI will guide you 
                       through the rest.
                     </p>
                   </div>
@@ -496,7 +516,7 @@ export default function ProjectDetailClient({
                   <div className={`${styles.messageRow} ${styles.messageRowAssistant}`}>
                     <div className={styles.thinkingBubble}>
                       <span className={styles.spinner} />
-                      <span>Claude is writing...</span>
+                      <span>The AI is writing...</span>
                     </div>
                   </div>
                 )}
