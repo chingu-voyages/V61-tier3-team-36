@@ -92,10 +92,6 @@ function request(
     body?: unknown;
     rawBody?: string;
   } = {}
-function request(
-  method: string,
-  path: string,
-  options: { token?: string; body?: unknown } = {}
 ) {
   return new Request(`http://localhost${path}`, {
     method,
@@ -107,9 +103,6 @@ function request(
         : {}),
     },
     body: options.rawBody ?? (options.body ? JSON.stringify(options.body) : undefined),
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
   });
 }
 
