@@ -69,27 +69,18 @@ try {
     conversation.messages
   );
 } catch (error) {
-  const isUpstreamFailure =
-    error instanceof Anthropic.AnthropicError ||
-    (error instanceof Error &&
-      (
-        error.message.includes("Model failed to return the structured tool call") ||
-        error.message.includes("Model returned malformed tool input")
-      ));
-
+  const isUpstreamFailure = error instanceof Error;
   if (isUpstreamFailure) {
     return NextResponse.json(
       {
         error:
-          "Specification generation failed while communicating with the AI model. Verify your API key and try again.",
+          "Specification generation failed while calling the AI model. Check your API key and try again.",
       },
       { status: 502 }
     );
   }
-
   throw error;
 }
-
   const spec = await createSpecVersion(
     project.id,
     generatedSpec.markdown,
