@@ -10,18 +10,30 @@ export default function CreateProject() {
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
 
-    console.log({
-      projectName,
+  const response = await fetch("/api/projects", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: projectName,
       description,
       deadline,
-    });
+    }),
+  });
 
-    // Temporary redirect
-    router.push("/project/1/overview");
+  if (!response.ok) {
+    alert("Failed to create project.");
+    return;
   }
+
+  const project = await response.json();
+
+  router.push(`/project/${project.id}/overview`);
+}
 
   return (
     <main className="max-w-2xl mx-auto mt-20">
