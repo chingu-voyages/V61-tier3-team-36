@@ -13,6 +13,38 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+const handleSubmit = async (
+  e: React.FormEvent<HTMLFormElement>
+) => {
+  e.preventDefault();
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  const response = await fetch("/api/signup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    alert(data.error);
+    return;
+  }
+
+  alert("Account created successfully!");
+};
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6">
       <Card className="w-full max-w-md p-8">
@@ -30,8 +62,7 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-5">
-
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <Input
             label="Full Name"
             value={name}
