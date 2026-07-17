@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function Dashboard() {
+  const session = await auth();
+
+  if (!session) {
+    redirect("/login");
+  }
   const projects = await prisma.project.findMany({
   orderBy: {
     createdAt: "desc",
