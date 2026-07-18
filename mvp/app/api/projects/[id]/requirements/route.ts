@@ -2,61 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      userId: session.user.id,
-    },
-  });
-
-  if (!project) {
-    return NextResponse.json(
-      { error: "Project not found" },
-      { status: 404 }
-    );
-  }
-
-  const requirements = await prisma.requirement.findMany({
-    where: {
-      projectId: id,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  return NextResponse.json(requirements);
-}
+type Params = {
+  params: Promise<{
+    id: string;
+  }>;
+};
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: Params
 ) {
   const session = await auth();
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
-  const { id } = await params;
+  const { id: projectId } = await params;
+  const body = await request.json();
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      userId: session.user.id,
-    },
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
   });
 
   if (!project) {
@@ -66,7 +35,12 @@ export async function POST(
     );
   }
 
-  const body = await request.json();
+  if (project.userId !== session.user.id) {
+    return NextResponse.json(
+      { error: "Forbidden" },
+      { status: 403 }
+    );
+  }
 
   const requirement = await prisma.requirement.create({
     data: {
@@ -74,7 +48,7 @@ export async function POST(
       description: body.description,
       priority: body.priority,
       status: body.status,
-      projectId: id,
+      projectId,
     },
   });
 

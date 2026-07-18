@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import NewRequirementButton from "./NewRequirementButton";
+import RequirementCard from "./RequirementCard";
 
 type Props = {
   params: Promise<{
@@ -40,23 +41,10 @@ export default async function RequirementsPage({ params }: Props) {
       ) : (
         <div className="space-y-5">
           {requirements.map((req) => (
-            <div
+            <RequirementCard
               key={req.id}
-              className="border border-zinc-700 rounded-xl p-6"
-            >
-              <h2 className="text-2xl font-semibold">
-                {req.title}
-              </h2>
-
-              <p className="mt-3 text-zinc-300">
-                {req.description}
-              </p>
-
-              <div className="flex gap-4 mt-5 text-sm text-zinc-400">
-                <span>Priority: {req.priority}</span>
-                <span>Status: {req.status}</span>
-              </div>
-            </div>
+              requirement={req}
+            />
           ))}
         </div>
       )}
