@@ -228,7 +228,7 @@ export function createLLMClient(apiKey: string, provider: Provider = "anthropic"
     async createMessage({ systemPrompt, messages, tools, toolChoice }) {
       return anthropic.messages.create({
         model: DEFAULT_ANTHROPIC_MODEL,
-        max_tokens: 1024,
+        max_tokens: 4096,
         system: systemPrompt,
         messages,
         tools,

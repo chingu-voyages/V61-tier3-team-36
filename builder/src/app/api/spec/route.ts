@@ -69,6 +69,7 @@ try {
     conversation.messages
   );
 } catch (error) {
+  console.error("SPEC GENERATION ERROR:", error);
   const isUpstreamFailure = error instanceof Error;
   if (isUpstreamFailure) {
     return NextResponse.json(

@@ -78,14 +78,8 @@ export async function POST(request: Request) {
       state: conversation.interview_state,
       messages,
     });
-  } catch (error) {
-    // Distinguish between upstream model/tool failures and internal server errors
-    const isUpstreamFailure =
-      error instanceof Anthropic.AnthropicError ||
-      (error instanceof Error &&
-        (error.message.includes("Model failed to return the structured tool call") ||
-         error.message.includes("Model returned malformed tool input")));
-
+} catch (error) {
+    const isUpstreamFailure = error instanceof Error;
     if (isUpstreamFailure) {
       return NextResponse.json(
         {
@@ -95,15 +89,8 @@ export async function POST(request: Request) {
         { status: 502 }
       );
     }
-
-    // For any other unexpected errors (e.g., database issues, internal bugs), return 500
-    console.error("Unexpected internal error during interview turn:", error);
-    return NextResponse.json(
-      { error: "An unexpected internal error occurred." },
-      { status: 500 }
-    );
+    throw error;
   }
-
   await saveConversationTurn(project.id, turn.updatedMessages, turn.updatedState);
 
   return NextResponse.json({
