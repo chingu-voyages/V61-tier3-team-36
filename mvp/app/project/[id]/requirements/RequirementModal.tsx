@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type Requirement = {
   id: string;
@@ -53,7 +54,7 @@ export default function RequirementModal({
 
   async function handleSubmit() {
     if (!title.trim()) {
-      alert("Title is required");
+      toast.error("Title is required");
       return;
     }
 
@@ -91,7 +92,7 @@ export default function RequirementModal({
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Something went wrong.");
+      toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -158,9 +159,9 @@ export default function RequirementModal({
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3"
               >
-                <option>TODO</option>
-                <option>IN-PROGRESS</option>
-                <option>DONE</option>
+                <option value="TODO">To-Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="DONE">Done</option>
               </select>
             </div>
           </div>

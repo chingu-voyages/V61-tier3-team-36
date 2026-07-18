@@ -10,6 +10,9 @@ export default async function Dashboard() {
     redirect("/login");
   }
   const projects = await prisma.project.findMany({
+  where: {
+    userId: session.user.id,
+  },
   orderBy: {
     createdAt: "desc",
   },

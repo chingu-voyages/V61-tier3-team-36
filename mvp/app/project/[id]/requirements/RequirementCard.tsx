@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import RequirementModal from "./RequirementModal";
+import { toast } from "sonner";
 
 type Requirement = {
   id: string;
@@ -15,6 +16,19 @@ type Requirement = {
 
 type Props = {
   requirement: Requirement;
+};
+
+const statusLabels = {
+  TODO: "To Do",
+  IN_PROGRESS: "In Progress",
+  DONE: "Done",
+};
+
+const priorityLabels = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
 };
 
 export default function RequirementCard({ requirement }: Props) {
@@ -44,7 +58,7 @@ export default function RequirementCard({ requirement }: Props) {
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Failed to delete requirement.");
+      toast.error("Failed to delete requirement.");
     }
   }
 
@@ -63,11 +77,11 @@ export default function RequirementCard({ requirement }: Props) {
 
             <div className="flex gap-3 mt-5">
               <span className="px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 text-sm">
-                {requirement.priority}
+                {priorityLabels[requirement.priority as keyof typeof priorityLabels]}
               </span>
 
               <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm">
-                {requirement.status}
+                {statusLabels[requirement.status as keyof typeof statusLabels]}
               </span>
             </div>
           </div>
