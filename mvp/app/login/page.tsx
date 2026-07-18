@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Card from "@/app/components/ui/Card";
 import Input from "@/app/components/ui/Input";
 import Button from "@/app/components/ui/Button";
+import { toast } from "sonner";
 
 
 
@@ -27,7 +28,7 @@ export default function LoginPage() {
   });
 
   if (result?.error) {
-    alert("Invalid email or password");
+    toast.error("Invalid email or password");
     return;
   }
 
@@ -59,7 +60,7 @@ export default function LoginPage() {
             label="Email"
             type="email"
             value={email}
-            placeholder="john@example.com"
+            placeholder="email"
             onChange={(e) => setEmail(e.target.value)}
           />
 
@@ -67,7 +68,7 @@ export default function LoginPage() {
             label="Password"
             type="password"
             value={password}
-            placeholder="Enter password"
+            placeholder="password"
             onChange={(e) => setPassword(e.target.value)}
           />
 
