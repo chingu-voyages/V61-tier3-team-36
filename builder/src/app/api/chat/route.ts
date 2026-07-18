@@ -1,8 +1,6 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import {
-  getOrCreateConversation,
-  saveConversationTurn,
-} from "../../../../lib/conversation";
+import { getOrCreateConversation, saveConversationTurn } from "../../../../lib/conversation";
 import { InterviewEngine } from "../../../../lib/interview-engine";
 import { isConverged } from "../../../../lib/interview-state";
 import { createLLMClient } from "../../../../lib/llm-client";
@@ -80,13 +78,29 @@ export async function POST(request: Request) {
       state: conversation.interview_state,
       messages,
     });
-  } catch {
+  } catch (error) {
+    // Distinguish between upstream model/tool failures and internal server errors
+    const isUpstreamFailure =
+      error instanceof Anthropic.AnthropicError ||
+      (error instanceof Error &&
+        (error.message.includes("Model failed to return the structured tool call") ||
+         error.message.includes("Model returned malformed tool input")));
+
+    if (isUpstreamFailure) {
+      return NextResponse.json(
+        {
+          error:
+            "Interview turn failed while calling the AI model. Check your API key and try again.",
+        },
+        { status: 502 }
+      );
+    }
+
+    // For any other unexpected errors (e.g., database issues, internal bugs), return 500
+    console.error("Unexpected internal error during interview turn:", error);
     return NextResponse.json(
-      {
-        error:
-          "Interview turn failed while calling the AI model. Check your API key and try again.",
-      },
-      { status: 502 }
+      { error: "An unexpected internal error occurred." },
+      { status: 500 }
     );
   }
 

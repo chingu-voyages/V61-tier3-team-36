@@ -26,10 +26,16 @@ export async function createWorkspace(): Promise<Workspace> {
 export async function getWorkspaceByMagicToken(
   magicToken: string
 ): Promise<Workspace | undefined> {
-  const [workspace] = await sql<Workspace[]>`
+
+  console.log("Looking up:", magicToken);
+
+  const result = await sql<Workspace[]>`
     SELECT id, magic_token, created_at
     FROM workspace
     WHERE magic_token = ${magicToken}
   `;
-  return workspace;
+
+  console.log(result);
+
+  return result[0];
 }

@@ -1,6 +1,6 @@
 # SpecForge
 
-SpecForge is a Next.js app for turning a product idea into a structured spec/PRD. The current backend foundation supports workspaces, projects, interview state, generated spec versions, and HTTP endpoints for workspace/project management.
+SpecForge is a Next.js app for turning a product idea into a structured spec/PRD. The platform provides a workspace-based environment where developers interact with an AI interviewer to satisfy product requirements, compile versioned specifications, and prepare delivery workflows.
 
 ## Repository Layout
 
@@ -14,6 +14,15 @@ SpecForge is a Next.js app for turning a product idea into a structured spec/PRD
 +-- plans/                   # Work breakdowns and ticket plans
 +-- specs/                   # Product/spec documents
 ```
+
+## Core Features
+
+* **Workspace Bootstrapping**: Dynamic workspace URL creation at `/workspace/[magicToken]` on first visit; persistent and bookmarkable workspace access keys.
+* **Projects Dashboard**: List, open, and create projects inside your tokenized workspace.
+* **API Key Gate**: Secure, client-side overlay prompting for an Anthropic API Key. Stored in `localStorage` and sent over HTTPS request headers; supports `env` bypass.
+* **Conversational Spec Interview**: Guides users through 7 required spec sections (e.g. Problems, Features, Scopes, Flow, Constraints) with real-time progress checklist tracking.
+* **Spec View & Export**: Renders compiled versioned specs in a preformatted scrollable block and supports downloading as `.md` file exports.
+* **Split Grid Workspace**: Transitions into a split layout presenting the Spec Document on the left column and the scrollable Interview History on the right column.
 
 ## Tech Stack
 
@@ -69,22 +78,30 @@ ANTHROPIC_API_KEY=your-api-key
 
 ## Database Setup
 
-Create the local database:
+Create and configure your local PostgreSQL database. If you are on macOS using Homebrew and encounter symlink conflicts with a preinstalled `libpq` package, resolve them with the following sequence:
 
 ```bash
-createdb specforge
+# Unlink libpq and overwrite-link the postgresql server formula
+brew unlink libpq
+brew link --overwrite postgresql@16
+brew postinstall postgresql@16
+brew services start postgresql@16
 ```
 
-Load the schema:
+Next, configure the database user and password (`postgres:postgres`) to match the `.env` connection string:
 
 ```bash
-psql "$DATABASE_URL" -f db/schema.sql
-```
+# Create the postgres superuser (if not already created)
+createuser -s postgres
 
-On Windows PowerShell:
+# Set the password to 'postgres'
+psql postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
-```powershell
-psql $env:DATABASE_URL -f db/schema.sql
+# Create the specforge database
+createdb -U postgres specforge
+
+# Load the database schema
+psql -U postgres -d specforge -f db/schema.sql
 ```
 
 If PostgreSQL reports that `gen_random_uuid()` is unavailable, enable the extension once in the database:
@@ -108,6 +125,16 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+### API Key Gate Configuration
+
+Upon visiting the workspace or project pages, you will be prompted to select an AI Provider (Anthropic or OpenAI) and enter the corresponding API Key:
+* **AI Providers Supported**:
+  * **Anthropic**: Uses Claude (model: `claude-sonnet-4-6`). Keys must start with `sk-ant-` (or `env`).
+  * **OpenAI**: Uses GPT-4o (model: `gpt-4o`). Keys must start with `sk-` (or `env`).
+* **Local Storage**: Keys are stored strictly locally in your browser's `localStorage` (keys: `specforge_anthropic_key`, `specforge_openai_key`, provider: `specforge_api_provider`) and are only sent via HTTPS request headers to our own backend proxy endpoints.
+* **Developer Bypass**: If you have `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` configured in the server's `builder/.env` file, you can enter `env` in the UI prompt to bypass the client-side gate and use the server's environment variable.
+* **Updating/Clearing Key**: You can click the settings gear widget floating in the bottom-right of the page to modify or clear your active API key and provider choice at any time.
 
 ## Available Scripts
 
@@ -143,16 +170,25 @@ Returns:
 }
 ```
 
-### Project Endpoints
+### Project & Chat Endpoints
 
-All project endpoints require:
+All project and conversation endpoints require a valid workspace token:
 
 ```http
 X-Workspace-Token: workspace-token
 ```
 
-Endpoints:
+Additionally, the conversation and spec generation `POST` endpoints require client-supplied API Key and Provider headers:
 
+```http
+X-Api-Provider: anthropic | openai
+X-Anthropic-Api-Key: sk-ant-...   # (Required if provider is anthropic)
+X-OpenAI-Api-Key: sk-...          # (Required if provider is openai)
+```
+
+*(Note: If the server has a fallback key configured in `.env`, developers can send `env` in the key headers to bypass the client gate).*
+
+#### Projects CRUD:
 ```http
 GET /api/projects
 POST /api/projects
@@ -160,20 +196,24 @@ PATCH /api/projects/:projectId
 DELETE /api/projects/:projectId
 ```
 
-Create or rename body:
+#### Conversational Interview Chat:
+```http
+GET /api/projects/:projectId/conversation    # Retrieve active chat and checklist progress
+POST /api/projects/:projectId/conversation   # Run a chat turn (takes {"message": "..."})
+```
 
-```json
-{
-  "name": "Project Name"
-}
+#### Spec Generation:
+```http
+GET /api/projects/:projectId/spec            # Retrieve the latest generated spec
+POST /api/projects/:projectId/spec           # Compile the specification document once converged
 ```
 
 Expected validation behavior:
 
 - Missing workspace token returns `400`
 - Unknown workspace token returns `404`
-- Missing or empty project name returns `400`
-- Project not found for rename/delete returns `404`
+- Missing or empty parameters/inputs returns `400`
+- Project not found for operations returns `404`
 
 ## Data Model
 
