@@ -12,37 +12,76 @@ model User {
   name          String
   email         String    @unique
   password      String
-  projects      Project[]
-  emailVerified DateTime?
   image         String?
-  createdAt     DateTime @default(now())
+  emailVerified DateTime?
+
+  createdAt     DateTime  @default(now())
+
+  projects      Project[]
   accounts      Account[]
   sessions      Session[]
 }
 
 model Project {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  deadline    DateTime?
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  deadline      DateTime?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  requirements  Requirement[]
+}
+
+model Requirement {
+  id            String             @id @default(cuid())
+
+  title         String
+  description   String
+
+  priority      RequirementPriority @default(MEDIUM)
+  status        RequirementStatus   @default(TODO)
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  projectId     String
+  project       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum RequirementPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RequirementStatus {
+  TODO
+  IN_PROGRESS
+  DONE
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String @id @default(cuid())
+
+  userId            String
+
+  type              String
+  provider          String
+  providerAccountId String
+
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -51,6 +90,7 @@ model Account {
 
 model Session {
   id           String   @id @default(cuid())
+
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -60,7 +100,7 @@ model Session {
 
 model VerificationToken {
   identifier String
-  token      String @unique
+  token      String   @unique
   expires    DateTime
 
   @@unique([identifier, token])
