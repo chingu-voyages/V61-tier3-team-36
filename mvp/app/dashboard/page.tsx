@@ -10,45 +10,121 @@ export default async function Dashboard() {
     redirect("/login");
   }
   const projects = await prisma.project.findMany({
+  where: {
+    userId: session.user.id,
+  },
   orderBy: {
     createdAt: "desc",
   },
+  include: {
+    requirements: true,
+  },
 });
   return (
-    <main className="min-h-screen p-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold">
-          Dashboard
-        </h1>
+    <main className="min-h-screen bg-zinc-950 p-10 text-white">
+  <div className="mx-auto max-w-7xl">
 
-        <Link href="/create-project" className="rounded-lg bg-black px-5 py-2 text-white hover:bg-gray-800">
-          + New Project
-        </Link>
+    <div className="mb-10 flex items-center justify-between">
+      <div>
+        <h1 className="text-4xl font-bold">Dashboard</h1>
+        <p className="mt-2 text-zinc-400">
+          Manage all your software projects.
+        </p>
       </div>
-      
-      {projects.length === 0 && (
-      <p className="mt-10 text-gray-500">
-        No projects yet.
-      </p>
-      )}
-      
-      <div className="mt-10 space-y-6">
-        {projects.map((project) => (
-          <div key={project.id} className="rounded-xl border p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold">
-               {project.name}
-            </h2>
 
-            <p className="mt-2 text-gray-600">
-                {project.description}
+      <Link href="/create-project" className="rounded-xl bg-blue-600 px-5 py-3 font-medium transition hover:bg-blue-700">
+        + New Project
+      </Link>
+    </div>
+
+    {projects.length === 0 && (
+      <div className="rounded-2xl border border-dashed border-zinc-700 py-24 text-center">
+       <div className="text-6xl">📁</div>
+        <h2 className="mt-6 text-2xl font-semibold">
+          No Projects Yet
+        </h2>
+
+        <p className="mt-3 text-zinc-400">
+          Create your first project to start planning software.
+        </p>
+
+      </div>
+    )}
+
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+      {projects.map((project) => {
+        const total = project.requirements.length;
+        return (
+          <div key={project.id} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500 hover:shadow-xl">
+
+            <div className="flex items-start justify-between">
+              <div>
+
+                <div className="mb-2 text-3xl">
+                  
+                </div>
+
+                <h2 className="text-2xl font-bold">
+                  {project.name}
+                </h2>
+
+              </div>
+
+              <Link href={`/project/${project.id}/overview`} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium hover:bg-blue-700" >
+                Open →
+              </Link>
+
+            </div>
+
+            <p className="mt-4 line-clamp-2 text-zinc-400">
+              {project.description || "No description provided."}
             </p>
 
-            <Link href={`/project/${project.id}/overview`} className="mt-4 inline-block rounded bg-gray-200 px-4 py-2 hover:bg-gray-300">
-              Open →
-            </Link>
+            <div className="mt-6">
+
+              <div className="mb-2 flex justify-between text-sm text-zinc-400">
+
+                <span>
+                  Requirements
+                </span>
+
+                <span>
+                  {total}
+                </span>
+
+              </div>
+
+              <div className="h-2 rounded-full bg-zinc-800">
+
+                <div
+                  className="h-2 w-0 rounded-full bg-blue-500"
+                />
+
+              </div>
+
+            </div>
+
+            <div className="mt-6 flex justify-between text-sm text-zinc-500">
+
+              <span>
+                Created
+              </span>
+
+              <span>
+                {project.createdAt.toLocaleDateString()}
+              </span>
+
+            </div>
+
           </div>
-        ))}
-      </div>
-    </main>
+
+        );
+      })}
+
+    </div>
+
+  </div>
+</main>
   );
 }

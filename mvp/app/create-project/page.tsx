@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CreateProject() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function CreateProject() {
   });
 
   if (!response.ok) {
-    alert("Failed to create project.");
+    toast.error("Failed to create project.");
     return;
   }
 

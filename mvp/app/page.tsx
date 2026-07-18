@@ -28,7 +28,7 @@ export default function Home() {
           </p>
 
           <div className="mt-10 flex gap-4">
-            <Link href="/create-project">
+            <Link href="/dashboard">
               <Button>Create Project</Button>
             </Link>
 
@@ -45,36 +45,7 @@ export default function Home() {
 
         <section className="mx-auto grid max-w-5xl gap-8 px-6 pb-28 md:grid-cols-2">
 
-          <Link href="/dashboard">
-            <Card className="h-full cursor-pointer hover:-translate-y-1 transition-all">
-              <div className="text-5xl">📝</div>
- 
-                 <h2 className="mt-6 text-2xl font-semibold">
-                 Capture Requirements
-               </h2>
-
-             <p className="mt-4 text-zinc-400">
-               Define functional and non-functional
-               requirements before writing code.
-             </p>
-            </Card>
-          </Link>
-
-          <Link href="/dashboard">
-            <Card className="h-full cursor-pointer hover:-translate-y-1 transition-all">
-              <div className="text-5xl">📄</div>
-
-               <h2 className="mt-6 text-2xl font-semibold">
-                  Generate SRS
-                </h2>
-
-              <p className="mt-4 text-zinc-400">
-                Produce professional Software Requirement
-                Specification documents.
-              </p>
-              </Card>
-           </Link>
-
+          
         </section>
 
       </main>
