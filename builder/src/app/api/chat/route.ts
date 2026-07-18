@@ -4,7 +4,7 @@ import { getOrCreateConversation, saveConversationTurn } from "../../../../lib/c
 import { InterviewEngine } from "../../../../lib/interview-engine";
 import { isConverged } from "../../../../lib/interview-state";
 import { createLLMClient } from "../../../../lib/llm-client";
-import { getProjectInWorkspace } from "../../../../lib/project"; 
+import { getProjectInWorkspace } from "../../../../lib/project";
 import { authenticateWorkspace } from "../projects/workspace-auth";
 
 const AI_MODEL_KEY_HEADER = "X-AI-Model-Key";
@@ -24,7 +24,6 @@ export async function POST(request: Request) {
     return auth.response;
   }
 
-  // Improvement 1: Add JSON parsing validation
   let body;
   try {
     body = await request.json();
@@ -52,7 +51,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Improvement 3: Fetch the single project directly
   const project = await getProjectInWorkspace(auth.workspace.id, projectId);
 
   if (!project) {
@@ -61,7 +59,6 @@ export async function POST(request: Request) {
 
   const conversation = await getOrCreateConversation(project.id);
 
-  // Improvement 2: Check if already converged before calling the engine
   if (isConverged(conversation.interview_state)) {
     return NextResponse.json(
       { error: "Interview has already converged" },
@@ -81,14 +78,8 @@ export async function POST(request: Request) {
       state: conversation.interview_state,
       messages,
     });
-  } catch (error) {
-    // Distinguish between upstream model/tool failures and internal server errors
-    const isUpstreamFailure =
-      error instanceof Anthropic.AnthropicError || // Catches all Anthropic SDK errors (API errors, rate limits, connection issues)
-      (error instanceof Error &&
-        (error.message.includes("Model failed to return the structured tool call") ||
-         error.message.includes("Model returned malformed tool input"))); // Catches our custom engine errors for bad model output
-
+} catch (error) {
+    const isUpstreamFailure = error instanceof Error;
     if (isUpstreamFailure) {
       return NextResponse.json(
         {
@@ -98,15 +89,8 @@ export async function POST(request: Request) {
         { status: 502 }
       );
     }
-
-    // For any other unexpected errors (e.g., database issues, internal bugs), return 500
-    console.error("Unexpected internal error during interview turn:", error);
-    return NextResponse.json(
-      { error: "An unexpected internal error occurred." },
-      { status: 500 }
-    );
+    throw error;
   }
-
   await saveConversationTurn(project.id, turn.updatedMessages, turn.updatedState);
 
   return NextResponse.json({
