@@ -159,7 +159,7 @@ export default function RequirementModal({
                 className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3"
               >
                 <option>TODO</option>
-                <option>IN_PROGRESS</option>
+                <option>IN-PROGRESS</option>
                 <option>DONE</option>
               </select>
             </div>
