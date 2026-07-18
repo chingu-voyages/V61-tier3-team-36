@@ -5,15 +5,6 @@ import { InterviewEngine } from "../../../../lib/interview-engine";
 import { isConverged } from "../../../../lib/interview-state";
 import { createLLMClient } from "../../../../lib/llm-client";
 import { getProjectInWorkspace } from "../../../../lib/project"; 
-import { NextResponse } from "next/server";
-import {
-  getOrCreateConversation,
-  saveConversationTurn,
-} from "../../../../lib/conversation";
-import { InterviewEngine } from "../../../../lib/interview-engine";
-import { isConverged } from "../../../../lib/interview-state";
-import { createLLMClient } from "../../../../lib/llm-client";
-import { getProjectInWorkspace } from "../../../../lib/project";
 import { authenticateWorkspace } from "../projects/workspace-auth";
 
 const AI_MODEL_KEY_HEADER = "X-AI-Model-Key";
@@ -113,13 +104,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "An unexpected internal error occurred." },
       { status: 500 }
-  } catch {
-    return NextResponse.json(
-      {
-        error:
-          "Interview turn failed while calling the AI model. Check your API key and try again.",
-      },
-      { status: 502 }
     );
   }
 
@@ -129,6 +113,4 @@ export async function POST(request: Request) {
     nextQuestion: turn.nextQuestion,
     converged: isConverged(turn.updatedState),
   });
-}
-}
 }

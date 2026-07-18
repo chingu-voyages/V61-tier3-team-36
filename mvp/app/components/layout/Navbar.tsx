@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Button from "../ui/Button";
 
 export default function Navbar() {
   return (
@@ -26,6 +27,14 @@ export default function Navbar() {
             className="font-medium text-gray-700 hover:text-blue-600"
           >
             New Project
+          </Link>
+
+          <Link href="/login" className="font-medium text-gray-700 hover:text-blue-600">
+              Login
+          </Link>
+
+          <Link href="/signup">
+             <Button>Sign Up</Button>
           </Link>
 
         </nav>
