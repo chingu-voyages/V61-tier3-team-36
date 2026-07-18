@@ -8,6 +8,20 @@ export interface Project {
   created_at: Date;
 }
 
+export async function getProjectInWorkspace(
+  workspaceId: string,
+  projectId: string
+): Promise<Project | null> {
+  const [project] = await sql<Project[]>`
+    SELECT id, workspace_id, name, status, created_at
+    FROM project
+    WHERE workspace_id = ${workspaceId}
+      AND id = ${projectId}
+  `;
+
+  return project ?? null;
+}
+
 export async function createProject(
   workspaceId: string,
   name: string
