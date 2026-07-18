@@ -98,3 +98,14 @@ SpecForge is designed for anyone involved in software development, including:
 - Engineering Teams
 - Business Analysts
 - Anyone with a software idea
+
+---
+
+# Team
+
+This project was developed collaboratively by:
+
+- **StamKam** – Web Developer | [GitHub](https://github.com/StamatisKamisakis)
+- **Advait MD** – Web Developer | [GitHub](https://github.com/Advait-MD)
+- **Nik** – Web Developer | [GitHub](https://github.com/nikhilrajgarhia)
+- **Fouad** – Web Developer | [GitHub](https://github.com/fmtabbara)
