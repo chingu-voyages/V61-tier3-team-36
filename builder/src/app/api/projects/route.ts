@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createProject, listProjects } from "../../../../lib/project";
+import { serializeProject } from "./project-response";
 import { authenticateWorkspace } from "./workspace-auth";
 
 export async function GET(request: Request) {
@@ -10,6 +11,7 @@ export async function GET(request: Request) {
 
   const projects = await listProjects(auth.workspace.id);
 
+  return NextResponse.json(projects.map(serializeProject));
   return NextResponse.json(projects);
 }
 
@@ -31,5 +33,6 @@ export async function POST(request: Request) {
 
   const project = await createProject(auth.workspace.id, name);
 
+  return NextResponse.json(serializeProject(project), { status: 201 });
   return NextResponse.json(project, { status: 201 });
 }
