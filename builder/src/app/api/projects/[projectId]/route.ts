@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteProject, renameProject } from "../../../../../lib/project";
+import { serializeProject } from "../project-response";
 import { authenticateWorkspace } from "../workspace-auth";
 
 interface ProjectRouteContext {
@@ -31,6 +32,7 @@ export async function PATCH(request: Request, context: ProjectRouteContext) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
+  return NextResponse.json(serializeProject(project));
   return NextResponse.json(project);
 }
 
